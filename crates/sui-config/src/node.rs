@@ -296,6 +296,12 @@ pub struct NodeConfig {
     /// Configuration for the trusted peer address prober.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_prober: Option<AddressProberConfig>,
+
+    /// MEV patch (block A): Unix socket that committed pool-related objects are pushed to,
+    /// so an out-of-process simulator keeps its cache warm instead of polling.
+    /// Unset disables the push path entirely.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mev_cache_update_socket: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

@@ -10,6 +10,7 @@ pub mod authority;
 pub mod authority_aggregator;
 pub mod authority_client;
 pub mod authority_server;
+pub(crate) mod cache_update_handler;
 pub mod checkpoints;
 pub mod congestion_tracker;
 pub mod consensus_adapter;
