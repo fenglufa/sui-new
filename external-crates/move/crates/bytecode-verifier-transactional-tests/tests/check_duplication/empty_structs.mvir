@@ -1,0 +1,6 @@
+//# publish
+mvir 0x1::EmptyStruct {
+  // no empty structs allowed
+  public struct Empty { }
+
+}

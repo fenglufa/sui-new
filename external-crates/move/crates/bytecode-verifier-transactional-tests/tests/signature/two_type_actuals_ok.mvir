@@ -1,0 +1,12 @@
+//# publish
+mvir 0x1::M {
+    public struct R has key { b: bool}
+    public struct S<T1: key, T2: copy + drop> { b: bool }
+
+    fun foo() {
+        // satisfy constraints
+        let x: Self::S<Self::R, bool>;
+    label b0:
+        return;
+    }
+}

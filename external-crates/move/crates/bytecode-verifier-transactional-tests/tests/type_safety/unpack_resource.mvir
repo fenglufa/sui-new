@@ -1,0 +1,103 @@
+//# publish
+mvir 0x1::Test {
+    public struct X { b: bool }
+    public struct T { i: u64, x: Self::X, b: bool }
+
+    public fun new_x(): Self::X {
+    label b0:
+        return X { b: true };
+    }
+
+    public fun new_t(x: Self::X): Self::T {
+    label b0:
+        return T { i: 0, x: move(x), b: false };
+    }
+
+    public fun destroy_x(x: Self::X) {
+        let b: bool;
+    label b0:
+        X { b } = move(x);
+        return;
+    }
+
+    // can unpack a resource and return it
+    public fun destroy_t(t: Self::T): u64 * Self::X * bool {
+        let i: u64;
+        let x: Self::X;
+        let flag: bool;
+    label b0:
+        T { i, x, b: flag } = move(t);
+        return move(i), move(x), move(flag);
+    }
+
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::Test;
+
+entry fun foo() {
+    let x: Test::X;
+    let i: u64;
+    let t: Test::T;
+    let b: bool;
+label b0:
+    x = Test::new_x();
+    t = Test::new_t(move(x));
+    i, x, b = Test::destroy_t(move(t));
+    Test::destroy_x(move(x));
+    return;
+}
+}
+
+//# publish
+mvir 0x3::Test {
+    public enum X { V{ b: bool } }
+    public enum T { V{ i: u64, x: Self::X, b: bool } }
+
+    public fun new_x(): Self::X {
+    label b0:
+        return X::V { b: true };
+    }
+
+    public fun new_t(x: Self::X): Self::T {
+    label b0:
+        return T::V { i: 0, x: move(x), b: false };
+    }
+
+    public fun destroy_x(x: Self::X) {
+        let b: bool;
+    label b0:
+        X::V { b } = move(x);
+        return;
+    }
+
+    // can unpack a resource and return it
+    public fun destroy_t(t: Self::T): u64 * Self::X * bool {
+        let i: u64;
+        let x: Self::X;
+        let flag: bool;
+    label b0:
+        T::V { i, x, b: flag } = move(t);
+        return move(i), move(x), move(flag);
+    }
+
+}
+
+//# run
+mvir 0x43::m {
+import 0x3::Test;
+
+entry fun foo() {
+    let x: Test::X;
+    let i: u64;
+    let t: Test::T;
+    let b: bool;
+label b0:
+    x = Test::new_x();
+    t = Test::new_t(move(x));
+    i, x, b = Test::destroy_t(move(t));
+    Test::destroy_x(move(x));
+    return;
+}
+}

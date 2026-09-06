@@ -1,0 +1,12 @@
+//# publish
+mvir 0x1::M {
+    public struct S<T: copy + drop> { b: bool }
+    public struct R { b: bool }
+
+    fun foo() {
+        // R does not have copy or drop
+        let x: Self::S<Self::R>;
+    label b0:
+        return;
+    }
+}

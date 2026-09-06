@@ -1,0 +1,34 @@
+//# run
+mvir 0x6::m {
+
+entry fun foo() {
+    let x: vector<u64>;
+    let r: &vector<u64>;
+    label start:
+        jump_if_false (true) end;
+    label if_true:
+        x = vector<u64; 0>();
+        r = &x;
+    label end:
+        x = vector<u64; 0>();
+        return;
+}
+
+}
+//# run
+mvir 0x7::m {
+
+entry fun foo() {
+    let x: vector<u64>;
+    let r: &vector<u64>;
+    label start:
+        x = vector<u64; 0>();
+        jump_if_false (true) end;
+    label if_true:
+        r = &x;
+    label end:
+        _ = move(x);
+        return;
+}
+
+}

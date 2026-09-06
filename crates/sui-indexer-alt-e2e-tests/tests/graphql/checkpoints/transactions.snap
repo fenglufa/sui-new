@@ -1,0 +1,223 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 12 tasks
+
+init:
+A: object(0,0), B: object(0,1)
+
+task 1, lines 6-21:
+//# run-graphql
+Response: {
+  "data": {
+    "checkpoint": {
+      "sequenceNumber": 0,
+      "digest": "AjtRex7uYg6od8T4Zzoyqy3d2nB8jiWEgnt6KCSpFq7r",
+      "transactions": {
+        "pageInfo": {
+          "hasPreviousPage": false,
+          "hasNextPage": false,
+          "startCursor": "KAE6BAgAEAA=",
+          "endCursor": "KAE6BAgAEAA="
+        },
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAA=",
+            "node": {
+              "digest": "GKpM9uNhR96ZtkZk6QRLW8teqPb5JYcE5icGcJVBMNtV",
+              "sender": null
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+task 2, lines 23-25:
+//# programmable --sender A --inputs 42 @A
+//> 0: SplitCoins(Gas, [Input(0)]);
+//> 1: TransferObjects([Result(0)], Input(1))
+created: object(2,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 3, lines 27-29:
+//# programmable --sender A --inputs 43 @A
+//> 0: SplitCoins(Gas, [Input(0)]);
+//> 1: TransferObjects([Result(0)], Input(1))
+created: object(3,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 4, lines 31-33:
+//# programmable --sender A --inputs 1
+//> SplitCoins(Gas, [Input(0)]);
+//> MergeCoins(Gas, [Result(0)])
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 988000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 5, lines 35-37:
+//# programmable --sender A --inputs 2
+//> SplitCoins(Gas, [Input(0)]);
+//> MergeCoins(Gas, [Result(0)])
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 988000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 6, lines 39-41:
+//# programmable --sender A --inputs 3
+//> SplitCoins(Gas, [Input(0)]);
+//> MergeCoins(Gas, [Result(0)])
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 988000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 7, line 43:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 8, lines 45-47:
+//# programmable --sender A --inputs 1
+//> SplitCoins(Gas, [Input(0)]);
+//> MergeCoins(Gas, [Result(0)])
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 988000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 9, line 49:
+//# create-checkpoint
+Checkpoint created: 2
+
+task 10, lines 51-75:
+//# run-graphql
+Response: {
+  "data": {
+    "checkpoint": {
+      "sequenceNumber": 1,
+      "digest": "Fu4fFRc6qhFANg2jCMnYvBJTyZox9qt59Gf7Qw29oTC7",
+      "transactions": {
+        "pageInfo": {
+          "hasPreviousPage": false,
+          "hasNextPage": false,
+          "startCursor": "KAE6BAgAEAE=",
+          "endCursor": "KAE6BAgAEAU="
+        },
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAE=",
+            "node": {
+              "digest": "5iUmf7DhkKHzsVFoCdD241kkwpeBDBSnq7ThaayXcxk1",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAI=",
+            "node": {
+              "digest": "HpVFGU6ushMZyioAfD2eyoRWEPrEGaMsGAdSJCuPbV3y",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAM=",
+            "node": {
+              "digest": "3q6y5zRegeqFGYcS267FFFBE18QhFs6sMMmk8R4JShBk",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAQ=",
+            "node": {
+              "digest": "2zRFPLtJs5ben5iuDUsSYRpf8iLBsMfTg2c8SAQMe51H",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAU=",
+            "node": {
+              "digest": "Gy3Fx1BSSCcaW2fEgFxdRq1BiqhebnvfkanGdecRf3eu",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          }
+        ]
+      },
+      "allTransactions": {
+        "pageInfo": {
+          "hasPreviousPage": false,
+          "hasNextPage": false,
+          "startCursor": "KAE6BAgAEAE=",
+          "endCursor": "KAE6BAgAEAY="
+        },
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAE=",
+            "node": {
+              "digest": "5iUmf7DhkKHzsVFoCdD241kkwpeBDBSnq7ThaayXcxk1",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAI=",
+            "node": {
+              "digest": "HpVFGU6ushMZyioAfD2eyoRWEPrEGaMsGAdSJCuPbV3y",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAM=",
+            "node": {
+              "digest": "3q6y5zRegeqFGYcS267FFFBE18QhFs6sMMmk8R4JShBk",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAQ=",
+            "node": {
+              "digest": "2zRFPLtJs5ben5iuDUsSYRpf8iLBsMfTg2c8SAQMe51H",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAU=",
+            "node": {
+              "digest": "Gy3Fx1BSSCcaW2fEgFxdRq1BiqhebnvfkanGdecRf3eu",
+              "sender": {
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAY=",
+            "node": {
+              "digest": "FnRLaJFCiQDLmx8HEJsaNfLAnGX1TULDnuLWBhDrLACm",
+              "sender": null
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+task 11, lines 77-92:
+//# run-graphql
+Response: {
+  "data": {
+    "checkpoint": null
+  }
+}

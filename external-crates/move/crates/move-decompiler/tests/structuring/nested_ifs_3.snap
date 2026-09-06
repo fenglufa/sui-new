@@ -1,0 +1,18 @@
+---
+source: crates/move-decompiler/tests/tests.rs
+assertion_line: 21
+---
+{ 0 }
+if (0) {
+    { 1 }
+} else {
+    { 2 }
+}
+{ 3 }
+{ 4 }
+if (4) {
+    { 5 }
+} else {
+    { 6 }
+}
+{ 7 }

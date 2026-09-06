@@ -1,0 +1,30 @@
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+label b0:
+    _ = vector<u64, bool; 0>();
+    return;
+}
+
+}
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+label b0:
+    _ = vector<; 0>();
+    return;
+}
+
+}
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+label b0:
+    _ = vector<&u64; 0>();
+    return;
+}
+
+}

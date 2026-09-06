@@ -1,0 +1,55 @@
+//# publish
+mvir 0x1::Tester {
+    fun eqtest1() {
+        let x: u64;
+        let r: &mut u64;
+    label b0:
+        x = 0;
+        r = &mut x;
+        // invalid read of mutable ref, does not currently own its data
+        _ = copy(r) == copy(r);
+        return;
+    }
+}
+
+//# publish
+mvir 0x1::Tester2 {
+    fun eqtest2() {
+        let x: u64;
+        let r: &mut u64;
+    label b0:
+        x = 0;
+        r = &mut x;
+        // invalid read of mutable ref, does not currently own its data
+        _ = copy(r) == move(r);
+        return;
+    }
+}
+
+//# publish
+mvir 0x1::Tester3 {
+    fun neqtest1() {
+        let x: u64;
+        let r: &mut u64;
+    label b0:
+        x = 0;
+        r = &mut x;
+        // invalid read of mutable ref, does not currently own its data
+        _ = copy(r) != copy(r);
+        return;
+    }
+}
+
+//# publish
+mvir 0x1::Tester4 {
+    fun neqtest2() {
+        let x: u64;
+        let r: &mut u64;
+    label b0:
+        x = 0;
+        r = &mut x;
+        // invalid read of mutable ref, does not currently own its data
+        _ = copy(r) != move(r);
+        return;
+    }
+}

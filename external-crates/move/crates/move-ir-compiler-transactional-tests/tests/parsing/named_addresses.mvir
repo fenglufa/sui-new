@@ -1,0 +1,36 @@
+//# init --addresses A=0x1 
+
+//# publish
+mvir A::T {
+    fun f() {
+        label l0:
+        return;
+    }
+
+    fun g(a: address): address {
+        label l0:
+        return move(a);
+    }
+}
+
+//# print-bytecode 
+mvir A::M {
+    import A::T;
+    fun f(): address {
+        label l0:
+            T::f();
+            return @A;
+    }
+
+    fun h(): address {
+        label l0:
+            return T::g(@A);
+    }
+
+    fun l(): address {
+        let t: address;
+        label l0:
+            t = @A;
+            return T::g(move(t));
+    }
+}

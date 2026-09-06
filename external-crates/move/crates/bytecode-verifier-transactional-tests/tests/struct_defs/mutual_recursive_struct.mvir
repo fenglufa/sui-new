@@ -1,0 +1,6 @@
+//# publish
+mvir 0x42::M {
+    // cannot have mutually recursive structs
+    public struct A{b: Self::B}
+    public struct B{a: Self::A}
+}

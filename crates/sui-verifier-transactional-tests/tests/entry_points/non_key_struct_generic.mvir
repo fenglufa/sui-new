@@ -1,0 +1,35 @@
+// Copyright (c) Mysten Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
+// invalid as NoStore doesn't have store, so Obj doesn't have key
+
+//# publish
+mvir 0x0::m {
+    import 0x2::tx_context;
+    import 0x2::object;
+
+    public struct Obj<T> has key { id: object::UID }
+    public struct NoStore has copy, drop { value: u64 }
+
+    public entry fun no(s: Self::Obj<Self::NoStore>, ctx: &mut tx_context::TxContext) {
+        label l0:
+        abort 0;
+    }
+
+}
+
+// invalid, T doesn't have store so Obj is not an object
+
+//# publish
+mvir 0x0::m {
+    import 0x2::tx_context;
+    import 0x2::object;
+
+    public struct Obj<T> has key { id: object::UID }
+
+    public entry fun no<T>(s: Self::Obj<T>, ctx: &mut tx_context::TxContext) {
+        label l0:
+        abort 0;
+    }
+
+}

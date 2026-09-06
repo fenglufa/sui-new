@@ -1,0 +1,223 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 13 tasks
+
+init:
+A: object(0,0)
+
+task 1, lines 6-8:
+//# programmable --sender A --inputs 1 @A
+//> SplitCoins(Gas, [Input(0)]);
+//> TransferObjects([Result(0)], Input(1))
+created: object(1,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 2, lines 10-12:
+//# programmable --sender A --inputs @A
+//> sui::bag::new();
+//> TransferObjects([Result(0)], Input(0))
+created: object(2,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2287600,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 3, lines 14-15:
+//# programmable --sender A --inputs object(2,0) 42
+//> sui::bag::add<u64, u64>(Input(0), Input(1), Input(1));
+created: object(3,0)
+mutated: object(0,0), object(2,0)
+gas summary: computation_cost: 1000000, storage_cost: 3754400,  storage_rebate: 2264724, non_refundable_storage_fee: 22876
+
+task 4, line 17:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 5, lines 19-35:
+//# run-graphql --cursors bcs(0u8,@{A})
+Response: {
+  "data": {
+    "node": {
+      "id": "APzMmkIbuxPBpmoaqY8K11Ap7elIV3ecaRW0T5QGi5Ie",
+      "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e",
+      "objects": {
+        "nodes": [
+          {
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::bag::Bag"
+              },
+              "json": {
+                "id": "0xb17a6f21d9b349dc43cc731bb1e268926e0cd9d95c95540bd81694a9f8a4122a",
+                "size": "1"
+              }
+            }
+          },
+          {
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xb0d826786ad374b9e6e79da4a2d6c8d5f23c413aeb76fa0b07e5636d173a4a8f",
+                "balance": "299999992224843"
+              }
+            }
+          },
+          {
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xb8896b0b4f69f4d8beb78c26918743199ba8c847d381a0ae26a46ea647578101",
+                "balance": "1"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+task 6, lines 37-46:
+//# run-graphql --cursors bcs(1u8,0)
+Response: {
+  "data": {
+    "node": {
+      "id": "AQAAAAAAAAAA",
+      "sequenceNumber": 0,
+      "digest": "CKjFRsvNLMhfTKYRc67g1tY5KjYkzrTRo9yu4rhW9nr1"
+    }
+  }
+}
+
+task 7, lines 48-62:
+//# run-graphql --cursors bcs(2u8,@{obj_3_0})
+Response: {
+  "data": {
+    "node": {
+      "id": "AobaTNgsXsZ7et/Zt0r1K9ZglWMIsusAqgPnSn8F7kwC",
+      "name": {
+        "type": {
+          "repr": "u64"
+        },
+        "json": "42"
+      },
+      "value": {
+        "type": {
+          "repr": "u64"
+        },
+        "json": "42"
+      }
+    }
+  }
+}
+
+task 8, lines 64-73:
+//# run-graphql --cursors bcs(4u8,0)
+Response: {
+  "data": {
+    "node": {
+      "id": "BAAAAAAAAAAA",
+      "epochId": 0,
+      "startTimestamp": "1970-01-01T00:00:00Z"
+    }
+  }
+}
+
+task 9, lines 75-86:
+//# run-graphql --cursors bcs(5u8,@{obj_0_0})
+Response: {
+  "data": {
+    "node": {
+      "id": "BbDYJnhq03S55uedpKLWyNXyPEE663b6CwflY20XOkqP",
+      "contents": {
+        "type": {
+          "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+        },
+        "json": {
+          "id": "0xb0d826786ad374b9e6e79da4a2d6c8d5f23c413aeb76fa0b07e5636d173a4a8f",
+          "balance": "299999992224843"
+        }
+      }
+    }
+  }
+}
+
+task 10, lines 88-113:
+//# run-graphql --cursors bcs(7u8,0x2) bcs(8u8,0x2)
+Response: {
+  "data": {
+    "package": {
+      "id": "BwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC",
+      "modules": {
+        "nodes": [
+          {
+            "name": "accumulator"
+          },
+          {
+            "name": "accumulator_metadata"
+          },
+          {
+            "name": "accumulator_settlement"
+          }
+        ]
+      }
+    },
+    "object": {
+      "id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC",
+      "asMovePackage": {
+        "modules": {
+          "nodes": [
+            {
+              "name": "accumulator"
+            },
+            {
+              "name": "accumulator_metadata"
+            },
+            {
+              "name": "accumulator_settlement"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+task 11, lines 115-128:
+//# run-graphql --cursors bcs(8u8,@{obj_0_0})
+Response: {
+  "data": {
+    "node": {
+      "id": "CLDYJnhq03S55uedpKLWyNXyPEE663b6CwflY20XOkqP",
+      "asMoveObject": {
+        "contents": {
+          "type": {
+            "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+          },
+          "json": {
+            "id": "0xb0d826786ad374b9e6e79da4a2d6c8d5f23c413aeb76fa0b07e5636d173a4a8f",
+            "balance": "299999992224843"
+          }
+        }
+      }
+    }
+  }
+}
+
+task 12, lines 130-141:
+//# run-graphql --cursors bcs(10u8,digest(@{digest_1}))
+Response: {
+  "data": {
+    "node": {
+      "id": "CiB5N6eerCfhgmAdi4CiK46J6H8M/77weZ4aCNfaJcY/UA==",
+      "digest": "9ABZ4a3uTspziirMPscrkYw99KhLjEKzFE5E6UXVUDCj",
+      "effects": {
+        "status": "SUCCESS"
+      }
+    }
+  }
+}

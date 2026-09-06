@@ -1,0 +1,19 @@
+//# publish
+mvir 0x42::M1 {
+    public enum S { V { x: &u64 } }
+}
+
+//# publish
+mvir 0x42::M2 {
+    public enum S { V { x: &mut u64 } }
+}
+
+//# publish
+mvir 0x42::M3 {
+    public enum S<T> { V { t: &T } }
+}
+
+//# publish
+mvir 0x42::M4 {
+    public enum S<T> { V { t: &mut T } }
+}

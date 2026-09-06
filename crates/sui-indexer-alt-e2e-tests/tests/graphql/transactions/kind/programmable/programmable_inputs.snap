@@ -1,0 +1,179 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 16 tasks
+
+init:
+A: object(0,0), B: object(0,1)
+
+task 1, lines 6-48:
+//# publish
+created: object(1,0), object(1,1)
+mutated: object(0,2)
+gas summary: computation_cost: 1000000, storage_cost: 9036400,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 2, lines 49-51:
+//# programmable --sender A --inputs 42u64 @A
+//> 0: test::simple::new_coin(Input(0));
+//> TransferObjects([Result(0)], Input(1))
+created: object(2,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2318000,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 3, lines 53-55:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 4, lines 56-57:
+//# programmable --sender A --inputs object(1,1) 10
+//> 0: test::simple::add(Input(0), Input(1))
+mutated: object(0,0), object(1,1)
+gas summary: computation_cost: 1000000, storage_cost: 2340800,  storage_rebate: 2317392, non_refundable_storage_fee: 23408
+
+task 5, lines 59-62:
+//# create-checkpoint
+Checkpoint created: 2
+
+task 6, lines 63-64:
+//# programmable --sender A --inputs object(2,0)
+//> 0: test::simple::get_value(Input(0))
+mutated: object(0,0), object(2,0)
+gas summary: computation_cost: 1000000, storage_cost: 2318000,  storage_rebate: 2294820, non_refundable_storage_fee: 23180
+
+task 7, lines 66-68:
+//# create-checkpoint
+Checkpoint created: 3
+
+task 8, lines 69-72:
+//# programmable --sender A --inputs 200u64 @A
+// Setup: Create coin and transfer it to A's address for Receiving test
+//> 0: test::simple::new_coin(Input(0));
+//> TransferObjects([Result(0)], Input(1))
+created: object(8,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2318000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 9, lines 74-76:
+//# programmable --sender A --inputs object(8,0) @A
+// Setup: Transfer coin to A's address (creates a pending receive)
+//> 0: test::simple::transfer_coin_to_address(Input(0), Input(1))
+mutated: object(0,0), object(8,0)
+gas summary: computation_cost: 1000000, storage_cost: 2318000,  storage_rebate: 2294820, non_refundable_storage_fee: 23180
+
+task 10, lines 78-80:
+//# programmable --sender A --inputs object(2,0) receiving(8,0) @A
+//> 0: test::simple::receive_coin(Input(0), Input(1));
+//> TransferObjects([Result(0)], Input(2))
+Error: Transaction Effects Status: Move Runtime Abort. Location: sui::transfer::receive_impl (function index 15) at offset 0, Abort Code: 3
+Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: MoveAbort(MoveLocation { module: ModuleId { address: sui, name: Identifier("transfer") }, function: 15, instruction: 0, function_name: Some("receive_impl") }, 3), source: Some(VMError { major_status: ABORTED, sub_status: Some(3), message: None, exec_state: None, location: Module(ModuleId { address: sui, name: Identifier("transfer") }), indices: [], offsets: [(FunctionDefinitionIndex(15), 0)] }), command: Some(0) } }
+
+task 11, line 82:
+//# create-checkpoint
+Checkpoint created: 4
+
+task 12, lines 84-103:
+//# run-graphql
+Response: {
+  "data": {
+    "pureInputTest": {
+      "digest": "CHptXRsAADVbbuYuvjhkvRTVN6bukFCTawaoCdXEHALj",
+      "kind": {
+        "__typename": "ProgrammableTransaction",
+        "inputs": {
+          "nodes": [
+            {
+              "__typename": "MoveValue",
+              "json": "42"
+            },
+            {
+              "__typename": "MoveValue",
+              "json": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+task 13, lines 105-126:
+//# run-graphql
+Response: {
+  "data": {
+    "sharedInputTest": {
+      "digest": "BgyVWkMb3V6Z5Ks2NLjJbrohJ2xGQ5xYKqU1husoUhk9",
+      "kind": {
+        "__typename": "ProgrammableTransaction",
+        "inputs": {
+          "nodes": [
+            {
+              "__typename": "SharedInput",
+              "address": "0x2fb770f5cd650d7db23a7a5af74c6d6e0a7227dad7431470fc4d054dc5ceeba4",
+              "initialSharedVersion": 2,
+              "mutable": true
+            },
+            {
+              "__typename": "MoveValue"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+task 14, lines 128-151:
+//# run-graphql
+Response: {
+  "data": {
+    "ownedOrImmutableTest": {
+      "digest": "CLWcCZBe21bfABbxTAXGMkHX7AmdafQn6bnxJMuxJrDD",
+      "kind": {
+        "__typename": "ProgrammableTransaction",
+        "inputs": {
+          "nodes": [
+            {
+              "__typename": "OwnedOrImmutable",
+              "object": {
+                "address": "0x3e8068450e610053f4f65e29e414135a7652146c724148de35eb14c2e73f0b36",
+                "version": 2,
+                "digest": "FbFbpCEftUMJZJhuTh9Pou3b1SexCmuqrqb1utbHyCbC"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+task 15, lines 153-176:
+//# run-graphql
+Response: {
+  "data": {
+    "receivingInputTest": {
+      "digest": "GQG22XMrzZYrd2Gr5zeSXwyx237Y7L5SRfeQZ31ZdQoo",
+      "kind": {
+        "__typename": "ProgrammableTransaction",
+        "inputs": {
+          "nodes": [
+            {
+              "__typename": "OwnedOrImmutable"
+            },
+            {
+              "__typename": "Receiving",
+              "object": {
+                "address": "0xc7f1c5b162c28d835e635f9e1c10de45ae9362e9cbb02c34eb8bd1e1a4a86519",
+                "version": 6,
+                "digest": "9wDNw619rmt9pFy2cj5km7UpqrBAxLxY9H1vFNDzUbYS"
+              }
+            },
+            {
+              "__typename": "MoveValue"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

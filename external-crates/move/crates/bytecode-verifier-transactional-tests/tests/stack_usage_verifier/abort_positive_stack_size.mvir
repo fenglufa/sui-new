@@ -1,0 +1,21 @@
+//# publish
+mvir 0x6::M {
+
+    public fun foo(): u64 {
+    label b0:
+        return 0;
+    }
+
+}
+
+//# run
+mvir 0x42::m {
+import 0x6::M;
+
+entry fun foo() {
+label b0:
+    // positive stack size invalid even with abort
+    M::foo();
+    abort 0;
+}
+}

@@ -1,0 +1,21 @@
+//# publish
+mvir 0x1::M {
+    public struct Coin { value: u64 }
+    fun t(): Self::Coin {
+    label b0:
+        // cannot pop without the drop ability
+        _ = Coin { value: 0 };
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::M {
+    public enum Coin { V { value: u64 } }
+    fun t(): Self::Coin {
+    label b0:
+        // cannot pop without the drop ability
+        _ = Coin::V { value: 0 };
+        return;
+    }
+}

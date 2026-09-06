@@ -1,0 +1,17 @@
+//# run --args 0 @0x1
+mvir 0x1::m {
+// no longer an invalid signature, after V5
+entry fun foo(u: u64, s: &signer) {
+label b0:
+    return;
+}
+}
+
+//# run --args 0 @0x1 1
+mvir 0x2::m {
+// no longer an invalid signature, after V5
+entry fun foo(u: u64, s: &signer, u2: u64) {
+label b0:
+    return;
+}
+}

@@ -1,0 +1,49 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 5 tasks
+
+init:
+A: object(0,0)
+
+task 1, lines 6-7:
+//# publish --upgradeable --sender A
+created: object(1,0), object(1,1)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 4826000,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 2, lines 9-13:
+//# publish --upgradeable --dependencies Dep1 --sender A
+created: object(2,0), object(2,1)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 5373200,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 3, line 15:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 4, lines 17-26:
+//# run-graphql
+Response: {
+  "data": {
+    "package": {
+      "linkage": [
+        {
+          "originalId": "0x0000000000000000000000000000000000000000000000000000000000000001",
+          "upgradedId": "0x0000000000000000000000000000000000000000000000000000000000000001",
+          "version": 1
+        },
+        {
+          "originalId": "0x0000000000000000000000000000000000000000000000000000000000000002",
+          "upgradedId": "0x0000000000000000000000000000000000000000000000000000000000000002",
+          "version": 1
+        },
+        {
+          "originalId": "0x6d03e97d389810f04e5067bc0e36a645d1e7794d5353117dc3a662dc7052f024",
+          "upgradedId": "0x6d03e97d389810f04e5067bc0e36a645d1e7794d5353117dc3a662dc7052f024",
+          "version": 1
+        }
+      ]
+    }
+  }
+}

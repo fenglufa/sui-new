@@ -1,0 +1,32 @@
+//# print-bytecode
+mvir 0x6::m {
+// An endless loop is valid Move IR.
+entry fun foo() {
+label loop:
+    jump loop;
+}
+}
+
+//# print-bytecode
+mvir 0x7::m {
+// Jumping to a label that is declared after the jump statement itself is valid.
+entry fun foo() {
+label foo:
+    jump bar;
+label bar:
+    jump foo;
+}
+}
+
+//# print-bytecode
+// Jumping to a label that isn't declared in the same function is invalid.
+mvir 0x6::M {
+    fun f() {
+    label foo:
+        jump bar;
+    }
+    fun g() {
+    label bar:
+        return;
+    }
+}

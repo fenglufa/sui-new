@@ -1,0 +1,22 @@
+//# publish
+mvir 0x1::M {
+    public struct Foo<T>{ x: T }
+
+    fun baz(x: u64) {
+    label b0:
+        return;
+    }
+
+    fun bar<T>(x: Self::Foo<u64>) {
+        let ref: &Self::Foo<u64>;
+        let y: &u64;
+        let z: u64;
+    label b0:
+        ref = &x;
+        y = &(&x).Foo<u64>::x;
+        _ = move(ref);
+        _ = move(y);
+        Foo<u64> { x: z } = move(x);
+        return;
+    }
+}

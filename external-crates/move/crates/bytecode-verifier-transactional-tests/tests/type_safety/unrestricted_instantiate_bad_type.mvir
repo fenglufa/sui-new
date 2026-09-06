@@ -1,0 +1,21 @@
+//# publish
+mvir 0x42::Test {
+    public struct T{fint: u64}
+
+    public fun t1(): Self::T {
+    label b0:
+        // arg type mismatch
+        return T{fint: false};
+    }
+}
+
+//# publish
+mvir 0x43::Test {
+    public enum T{V {fint: u64} }
+
+    public fun t1(): Self::T {
+    label b0:
+        // arg type mismatch
+        return T::V{fint: false};
+    }
+}

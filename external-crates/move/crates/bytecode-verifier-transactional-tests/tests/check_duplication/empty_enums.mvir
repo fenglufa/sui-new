@@ -1,0 +1,7 @@
+//# publish
+mvir 0x1::EmptyStruct {
+  // no empty enums allowed
+  public enum Empty { }
+
+}
+

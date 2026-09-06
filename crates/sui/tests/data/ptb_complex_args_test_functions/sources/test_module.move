@@ -1,0 +1,28 @@
+// Copyright (c) Mysten Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
+module test_functions::test_module;
+
+use std::ascii::String as AS;
+use std::string::String as US;
+
+public struct Shared has key, store {
+    id: UID,
+}
+
+public fun new_shared(ctx: &mut TxContext) {
+    transfer::share_object(Shared { id: object::new(ctx) })
+}
+
+public fun use_immut(_: &Shared) {}
+
+public fun use_mut(_: &mut Shared) {}
+
+public fun use_ascii_string(_: AS) {}
+
+public fun use_utf8_string(_: US) {}
+
+public fun delete_shared_object(shared: Shared) {
+    let Shared { id } = shared;
+    id.delete();
+}

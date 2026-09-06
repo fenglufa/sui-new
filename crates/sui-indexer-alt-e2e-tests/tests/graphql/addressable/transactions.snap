@@ -1,0 +1,272 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 9 tasks
+
+init:
+A: object(0,0), B: object(0,1)
+
+task 1, lines 6-21:
+//# publish
+created: object(1,0)
+mutated: object(0,2)
+gas summary: computation_cost: 1000000, storage_cost: 5183200,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 2, line 22:
+//# run Test::M1::create --sender A --args 0 @A
+created: object(2,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2302800,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 3, lines 24-26:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 4, line 27:
+//# run Test::M1::create --sender A --args 1 @B
+created: object(4,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2302800,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 5, lines 29-31:
+//# create-checkpoint
+Checkpoint created: 2
+
+task 6, line 32:
+//# run Test::M1::create --sender B --args 2 @A
+created: object(6,0)
+mutated: object(0,1)
+gas summary: computation_cost: 1000000, storage_cost: 2302800,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 7, line 34:
+//# create-checkpoint
+Checkpoint created: 3
+
+task 8, lines 36-111:
+//# run-graphql
+Response: {
+  "data": {
+    "addressA_sent": {
+      "transactions": {
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAI=",
+            "node": {
+              "digest": "8VgXmZjNCVbKPgofJbWPBo9VcKKW7zhDVeoaWyvZSedZ",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 1,
+                  "digest": "5ArNTA8acwWsbcSWSs2AJCyf8x4DkSdyur9WvvB7U5tZ"
+                }
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAQ=",
+            "node": {
+              "digest": "6kKARDwDrTYfW7GSuitycDTSrScADQ6emTbQcCkgJS4t",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 2,
+                  "digest": "84FXzJ69Mmip4FG2KvffAK9eQ4BQBq1488NGTakYBQvS"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "addressA_sent_explicit": {
+      "transactions": {
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAI=",
+            "node": {
+              "digest": "8VgXmZjNCVbKPgofJbWPBo9VcKKW7zhDVeoaWyvZSedZ",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 1,
+                  "digest": "5ArNTA8acwWsbcSWSs2AJCyf8x4DkSdyur9WvvB7U5tZ"
+                }
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAQ=",
+            "node": {
+              "digest": "6kKARDwDrTYfW7GSuitycDTSrScADQ6emTbQcCkgJS4t",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 2,
+                  "digest": "84FXzJ69Mmip4FG2KvffAK9eQ4BQBq1488NGTakYBQvS"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "addressA_affected": {
+      "transactions": {
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAA=",
+            "node": {
+              "digest": "GKpM9uNhR96ZtkZk6QRLW8teqPb5JYcE5icGcJVBMNtV",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 0,
+                  "digest": "AjtRex7uYg6od8T4Zzoyqy3d2nB8jiWEgnt6KCSpFq7r"
+                }
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAI=",
+            "node": {
+              "digest": "8VgXmZjNCVbKPgofJbWPBo9VcKKW7zhDVeoaWyvZSedZ",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 1,
+                  "digest": "5ArNTA8acwWsbcSWSs2AJCyf8x4DkSdyur9WvvB7U5tZ"
+                }
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAQ=",
+            "node": {
+              "digest": "6kKARDwDrTYfW7GSuitycDTSrScADQ6emTbQcCkgJS4t",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 2,
+                  "digest": "84FXzJ69Mmip4FG2KvffAK9eQ4BQBq1488NGTakYBQvS"
+                }
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAY=",
+            "node": {
+              "digest": "B6F3FJbimN6T17MgmNBtn7AKgDPrz4CKd96dxaWiXtgE",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 3,
+                  "digest": "4ZCvcxf3oJ5NnPRZ3PQ7qZdqvu5eMC2MvQrmykUBL8Si"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "addressB_sent": {
+      "transactions": {
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAY=",
+            "node": {
+              "digest": "B6F3FJbimN6T17MgmNBtn7AKgDPrz4CKd96dxaWiXtgE",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 3,
+                  "digest": "4ZCvcxf3oJ5NnPRZ3PQ7qZdqvu5eMC2MvQrmykUBL8Si"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "addressB_affected": {
+      "transactions": {
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAA=",
+            "node": {
+              "digest": "GKpM9uNhR96ZtkZk6QRLW8teqPb5JYcE5icGcJVBMNtV",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 0,
+                  "digest": "AjtRex7uYg6od8T4Zzoyqy3d2nB8jiWEgnt6KCSpFq7r"
+                }
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAQ=",
+            "node": {
+              "digest": "6kKARDwDrTYfW7GSuitycDTSrScADQ6emTbQcCkgJS4t",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 2,
+                  "digest": "84FXzJ69Mmip4FG2KvffAK9eQ4BQBq1488NGTakYBQvS"
+                }
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAY=",
+            "node": {
+              "digest": "B6F3FJbimN6T17MgmNBtn7AKgDPrz4CKd96dxaWiXtgE",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 3,
+                  "digest": "4ZCvcxf3oJ5NnPRZ3PQ7qZdqvu5eMC2MvQrmykUBL8Si"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "addressA_sent_with_filter": {
+      "transactions": {
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAI=",
+            "node": {
+              "digest": "8VgXmZjNCVbKPgofJbWPBo9VcKKW7zhDVeoaWyvZSedZ",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 1,
+                  "digest": "5ArNTA8acwWsbcSWSs2AJCyf8x4DkSdyur9WvvB7U5tZ"
+                }
+              }
+            }
+          },
+          {
+            "cursor": "KAE6BAgAEAQ=",
+            "node": {
+              "digest": "6kKARDwDrTYfW7GSuitycDTSrScADQ6emTbQcCkgJS4t",
+              "effects": {
+                "checkpoint": {
+                  "sequenceNumber": 2,
+                  "digest": "84FXzJ69Mmip4FG2KvffAK9eQ4BQBq1488NGTakYBQvS"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "addressA_affected_first1": {
+      "transactions": {
+        "pageInfo": {
+          "hasNextPage": true,
+          "hasPreviousPage": false,
+          "startCursor": "KAE6BAgAEAA=",
+          "endCursor": "KAE6BAgAEAA="
+        },
+        "edges": [
+          {
+            "cursor": "KAE6BAgAEAA=",
+            "node": {
+              "digest": "GKpM9uNhR96ZtkZk6QRLW8teqPb5JYcE5icGcJVBMNtV"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

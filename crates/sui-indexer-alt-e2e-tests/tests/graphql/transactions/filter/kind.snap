@@ -1,0 +1,208 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 7 tasks
+
+init:
+A: object(0,0), B: object(0,1)
+
+task 1, lines 6-19:
+//# publish
+created: object(1,0)
+mutated: object(0,2)
+gas summary: computation_cost: 1000000, storage_cost: 5183200,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 2, line 21:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 3, line 23:
+//# run Test::M1::create --args 0 @A --sender A
+created: object(3,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2302800,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 4, line 25:
+//# run Test::M1::create --args 1 @B --sender A
+created: object(4,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2302800,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 5, line 27:
+//# create-checkpoint
+Checkpoint created: 2
+
+task 6, lines 29-58:
+//# run-graphql
+Response: {
+  "data": {
+    "programmable": {
+      "pageInfo": {
+        "startCursor": "KAE6BAgAEAE=",
+        "endCursor": "KAE6BAgAEAQ=",
+        "hasPreviousPage": false,
+        "hasNextPage": false
+      },
+      "edges": [
+        {
+          "cursor": "KAE6BAgAEAE=",
+          "node": {
+            "digest": "9TEV41SwA1BmtU39j7kvP2UtGmkUNVmau9hkvHA6UaNr",
+            "kind": {
+              "__typename": "ProgrammableTransaction"
+            },
+            "effects": {
+              "checkpoint": {
+                "sequenceNumber": 1,
+                "digest": "2oo2uRdoiUXByJ4CtPBUFKwLh2QLFb4QJufMHWb7RGTg"
+              }
+            }
+          }
+        },
+        {
+          "cursor": "KAE6BAgAEAM=",
+          "node": {
+            "digest": "8VgXmZjNCVbKPgofJbWPBo9VcKKW7zhDVeoaWyvZSedZ",
+            "kind": {
+              "__typename": "ProgrammableTransaction"
+            },
+            "effects": {
+              "checkpoint": {
+                "sequenceNumber": 2,
+                "digest": "3BtpDTJQ7VdmedrChbe4phCiN3iZgMVngxTUXHgyGWc4"
+              }
+            }
+          }
+        },
+        {
+          "cursor": "KAE6BAgAEAQ=",
+          "node": {
+            "digest": "6kKARDwDrTYfW7GSuitycDTSrScADQ6emTbQcCkgJS4t",
+            "kind": {
+              "__typename": "ProgrammableTransaction"
+            },
+            "effects": {
+              "checkpoint": {
+                "sequenceNumber": 2,
+                "digest": "3BtpDTJQ7VdmedrChbe4phCiN3iZgMVngxTUXHgyGWc4"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "programmableA": {
+      "pageInfo": {
+        "startCursor": "KAE6BAgAEAM=",
+        "endCursor": "KAE6BAgAEAQ=",
+        "hasPreviousPage": false,
+        "hasNextPage": false
+      },
+      "edges": [
+        {
+          "cursor": "KAE6BAgAEAM=",
+          "node": {
+            "digest": "8VgXmZjNCVbKPgofJbWPBo9VcKKW7zhDVeoaWyvZSedZ",
+            "kind": {
+              "__typename": "ProgrammableTransaction"
+            },
+            "effects": {
+              "checkpoint": {
+                "sequenceNumber": 2,
+                "digest": "3BtpDTJQ7VdmedrChbe4phCiN3iZgMVngxTUXHgyGWc4"
+              }
+            }
+          }
+        },
+        {
+          "cursor": "KAE6BAgAEAQ=",
+          "node": {
+            "digest": "6kKARDwDrTYfW7GSuitycDTSrScADQ6emTbQcCkgJS4t",
+            "kind": {
+              "__typename": "ProgrammableTransaction"
+            },
+            "effects": {
+              "checkpoint": {
+                "sequenceNumber": 2,
+                "digest": "3BtpDTJQ7VdmedrChbe4phCiN3iZgMVngxTUXHgyGWc4"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "programmableB_empty": {
+      "pageInfo": {
+        "startCursor": null,
+        "endCursor": null,
+        "hasPreviousPage": false,
+        "hasNextPage": false
+      },
+      "edges": []
+    },
+    "system": {
+      "pageInfo": {
+        "startCursor": "KAE6BAgAEAA=",
+        "endCursor": "KAE6BAgAEAU=",
+        "hasPreviousPage": false,
+        "hasNextPage": false
+      },
+      "edges": [
+        {
+          "cursor": "KAE6BAgAEAA=",
+          "node": {
+            "digest": "GKpM9uNhR96ZtkZk6QRLW8teqPb5JYcE5icGcJVBMNtV",
+            "kind": {
+              "__typename": "GenesisTransaction"
+            },
+            "effects": {
+              "checkpoint": {
+                "sequenceNumber": 0,
+                "digest": "AjtRex7uYg6od8T4Zzoyqy3d2nB8jiWEgnt6KCSpFq7r"
+              }
+            }
+          }
+        },
+        {
+          "cursor": "KAE6BAgAEAI=",
+          "node": {
+            "digest": "FnRLaJFCiQDLmx8HEJsaNfLAnGX1TULDnuLWBhDrLACm",
+            "kind": {
+              "__typename": "ProgrammableSystemTransaction"
+            },
+            "effects": {
+              "checkpoint": {
+                "sequenceNumber": 1,
+                "digest": "2oo2uRdoiUXByJ4CtPBUFKwLh2QLFb4QJufMHWb7RGTg"
+              }
+            }
+          }
+        },
+        {
+          "cursor": "KAE6BAgAEAU=",
+          "node": {
+            "digest": "2iEZQGAgJYgzmcNC2eLrbNejeTJHJxY4Xy4yKj7R3D8g",
+            "kind": {
+              "__typename": "ProgrammableSystemTransaction"
+            },
+            "effects": {
+              "checkpoint": {
+                "sequenceNumber": 2,
+                "digest": "3BtpDTJQ7VdmedrChbe4phCiN3iZgMVngxTUXHgyGWc4"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "systemA_empty": {
+      "pageInfo": {
+        "startCursor": null,
+        "endCursor": null,
+        "hasPreviousPage": false,
+        "hasNextPage": false
+      },
+      "edges": []
+    }
+  }
+}

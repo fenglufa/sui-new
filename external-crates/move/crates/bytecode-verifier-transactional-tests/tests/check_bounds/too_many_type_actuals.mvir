@@ -1,0 +1,11 @@
+//# publish
+mvir 0x6::M {
+    public struct S { b: bool }
+
+    fun foo() {
+        // type arg mismatch
+        let x: Self::S<u64>;
+    label b0:
+        return;
+    }
+}

@@ -1,0 +1,66 @@
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+label b0:
+    (3);
+    to_u8(());
+    return;
+}
+
+}
+//# run
+mvir 0x43::m {
+
+entry fun foo() {
+label b0:
+    (3);
+    to_u16(());
+    return;
+}
+
+}
+//# run
+mvir 0x44::m {
+
+entry fun foo() {
+label b0:
+    (3);
+    to_u32(());
+    return;
+}
+
+}
+//# run
+mvir 0x45::m {
+
+entry fun foo() {
+label b0:
+    (3);
+    to_u64(());
+    return;
+}
+
+}
+//# run
+mvir 0x46::m {
+
+entry fun foo() {
+label b0:
+    (3);
+    to_u128(());
+    return;
+}
+
+}
+//# run
+mvir 0x47::m {
+
+entry fun foo() {
+label b0:
+    (3);
+    to_u256(());
+    return;
+}
+
+}

@@ -1,0 +1,9 @@
+//# run --type-args u64
+mvir 0x42::m {
+
+entry fun foo() { // too many type args
+label b0:
+    return;
+}
+
+}

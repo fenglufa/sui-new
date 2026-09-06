@@ -1,0 +1,23 @@
+//# publish
+mvir 0x1::Token {
+    public struct T has key { b: bool }
+
+    public fun test() {
+        let no: bool;
+    label b0:
+        no = T{ b: true } == T{ b: true }; // == requires drop
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::Token {
+    public enum T has key { V { b: bool } }
+
+    public fun test() {
+        let no: bool;
+    label b0:
+        no = T::V{ b: true } == T::V{ b: true }; // == requires drop
+        return;
+    }
+}

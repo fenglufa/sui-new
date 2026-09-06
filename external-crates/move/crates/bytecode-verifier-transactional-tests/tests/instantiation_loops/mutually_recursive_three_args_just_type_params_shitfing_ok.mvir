@@ -1,0 +1,20 @@
+//# publish
+mvir 0x6::M {
+    fun f<T1, T2, T3>() {
+    label b0:
+        Self::g<T2, T3, T1>();
+        return;
+    }
+
+    fun g<T1, T2, T3>() {
+    label b0:
+        Self::h<T1, T2, T3>();
+        return;
+    }
+
+    fun h<T1, T2, T3>() {
+    label b0:
+        Self::f<T1, T2, T3>();
+        return;
+    }
+}

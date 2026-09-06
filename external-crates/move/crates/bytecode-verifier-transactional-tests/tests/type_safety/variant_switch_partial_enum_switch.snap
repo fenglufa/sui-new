@@ -1,0 +1,26 @@
+---
+source: crates/move-transactional-test-runner/src/framework.rs
+---
+processed 3 tasks
+
+task 1, lines 16-28:
+//# publish
+Error: Unable to publish module '0000000000000000000000000000000000000000000000000000000000000002::O'. Got VMError: {
+    major_status: INVALID_ENUM_SWITCH,
+    sub_status: None,
+    location: 0x2,
+    indices: [(VariantTag, 0)],
+    offsets: [],
+    message: "Jump table length 0 does not equal number of variants 1",
+}
+
+task 2, lines 30-43:
+//# publish
+Error: Unable to publish module '0000000000000000000000000000000000000000000000000000000000000002::O'. Got VMError: {
+    major_status: INVALID_ENUM_SWITCH,
+    sub_status: None,
+    location: 0x2,
+    indices: [(VariantTag, 1)],
+    offsets: [],
+    message: "Jump table length 1 does not equal number of variants 2",
+}

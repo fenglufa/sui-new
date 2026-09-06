@@ -1,0 +1,12 @@
+---
+source: crates/move-decompiler/tests/tests.rs
+---
+module funs {
+    public fun f () {
+    }
+
+    public fun f_s () {
+        return l0
+    }
+
+}

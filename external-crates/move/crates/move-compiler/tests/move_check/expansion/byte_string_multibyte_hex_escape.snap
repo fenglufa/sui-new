@@ -1,0 +1,12 @@
+---
+source: crates/move-compiler/tests/move_check_testsuite.rs
+info:
+  flavor: core
+  edition: legacy
+  lint: false
+---
+error[EC01007]: invalid byte string
+  ┌─ tests/move_check/expansion/byte_string_multibyte_hex_escape.move:3:14
+  │
+3 │         b"\xAñ"
+  │              ^ Invalid hexadecimal character: 'ñ'

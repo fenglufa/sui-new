@@ -1,0 +1,25 @@
+//# publish
+mvir 0x1::M {
+    public struct R { b: bool }
+    public struct Box<T> { x: T }
+
+    fun foo(x: Self::Box<Self::R>): Self::Box<Self::R> {
+        let y: Self::Box<Self::R>;
+    label b0:
+        y = copy(x); // type does not have copy
+        return move(y);
+    }
+}
+
+//# publish
+mvir 0x2::M {
+    public enum R { V{ b: bool } }
+    public enum Box<T> { V{ x: T } }
+
+    fun foo(x: Self::Box<Self::R>): Self::Box<Self::R> {
+        let y: Self::Box<Self::R>;
+    label b0:
+        y = copy(x); // type does not have copy
+        return move(y);
+    }
+}
