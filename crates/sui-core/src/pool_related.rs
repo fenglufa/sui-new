@@ -65,27 +65,51 @@ static POOL_RELATED_STATE: OnceLock<PoolRelatedState> = OnceLock::new();
 static RECORDING: OnceLock<bool> = OnceLock::new();
 static ID_FILE_PATH: OnceLock<PathBuf> = OnceLock::new();
 
+/// Parse the persisted id file: one [`ObjectID`] per line.
+///
+/// Blank lines are skipped and unparseable lines are counted rather than fatal, so a
+/// corrupted file degrades to a partially populated set instead of stopping the node.
+/// Returns the ids and the number of lines that were ignored.
+fn parse_ids_from_content(content: &str) -> (DashSet<ObjectID>, usize) {
+    let related_ids = DashSet::new();
+    let mut malformed = 0usize;
+
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        match line.parse::<ObjectID>() {
+            Ok(id) => {
+                related_ids.insert(id);
+            }
+            Err(_) => malformed += 1,
+        }
+    }
+
+    (related_ids, malformed)
+}
+
+/// Whether newly observed cache-miss ids should be persisted.
+///
+/// The flag is opt-in: unset or any falsy spelling means "read the file, learn nothing".
+fn parse_recording_flag(raw: Option<&str>) -> bool {
+    match raw {
+        Some(value) => !matches!(
+            value.trim().to_ascii_lowercase().as_str(),
+            "" | "0" | "false" | "no" | "off"
+        ),
+        None => false,
+    }
+}
+
 impl PoolRelatedState {
     /// Read the persisted id set. A missing or unreadable file is not fatal: the node
     /// starts with an empty set and learns from scratch.
     fn load(path: &Path) -> Self {
-        let related_ids = DashSet::new();
-
-        match std::fs::read_to_string(path) {
+        let related_ids = match std::fs::read_to_string(path) {
             Ok(content) => {
-                let mut malformed = 0usize;
-                for line in content.lines() {
-                    let line = line.trim();
-                    if line.is_empty() {
-                        continue;
-                    }
-                    match line.parse::<ObjectID>() {
-                        Ok(id) => {
-                            related_ids.insert(id);
-                        }
-                        Err(_) => malformed += 1,
-                    }
-                }
+                let (related_ids, malformed) = parse_ids_from_content(&content);
                 if malformed > 0 {
                     warn!(
                         malformed,
@@ -98,12 +122,14 @@ impl PoolRelatedState {
                     path = %path.display(),
                     "pool_related: loaded known pool object ids"
                 );
+                related_ids
             }
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
                 warn!(
                     path = %path.display(),
                     "pool_related: id file not found, starting with an empty set"
                 );
+                DashSet::new()
             }
             Err(err) => {
                 warn!(
@@ -111,8 +137,9 @@ impl PoolRelatedState {
                     path = %path.display(),
                     "pool_related: failed to read id file, starting with an empty set"
                 );
+                DashSet::new()
             }
-        }
+        };
 
         Self {
             related_ids,
@@ -171,13 +198,7 @@ fn id_file_path() -> &'static Path {
 }
 
 fn recording_enabled() -> bool {
-    *RECORDING.get_or_init(|| match std::env::var(RECORD_ENV) {
-        Ok(value) => !matches!(
-            value.trim().to_ascii_lowercase().as_str(),
-            "" | "0" | "false" | "no" | "off"
-        ),
-        Err(_) => false,
-    })
+    *RECORDING.get_or_init(|| parse_recording_flag(std::env::var(RECORD_ENV).ok().as_deref()))
 }
 
 fn state() -> &'static PoolRelatedState {
@@ -208,5 +229,108 @@ pub(crate) fn on_cache_miss(table: &'static str, level: &'static str, object_id:
 
     if recording_enabled() {
         state().record(id_file_path(), object_id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    /// Unique scratch path under the system temp dir. `tempfile` is not a dependency of
+    /// this crate, and adding one purely for these tests would widen the patch's footprint
+    /// inside an upstream `Cargo.toml`.
+    fn scratch_path(label: &str) -> PathBuf {
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
+        let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "sui_pool_related_test_{}_{}_{}",
+            std::process::id(),
+            label,
+            n
+        ))
+    }
+
+    fn id(n: u8) -> ObjectID {
+        format!("0x{n:0>64x}").parse().expect("valid object id")
+    }
+
+    #[test]
+    fn parses_ids_and_ignores_blank_and_malformed_lines() {
+        let (a, b) = (id(1), id(2));
+        let content = format!("{a}\n\n  {b}  \nnot-an-id\n{a}\n");
+
+        let (set, malformed) = parse_ids_from_content(&content);
+
+        assert_eq!(malformed, 1, "only the one garbage line is counted");
+        assert!(set.contains(&a));
+        assert!(set.contains(&b));
+        assert_eq!(set.len(), 2, "a repeated id collapses");
+    }
+
+    #[test]
+    fn recording_flag_is_opt_in() {
+        assert!(!parse_recording_flag(None), "unset means off");
+        for falsy in ["", "0", "false", "FALSE", " no ", "Off"] {
+            assert!(
+                !parse_recording_flag(Some(falsy)),
+                "{falsy:?} should be falsy"
+            );
+        }
+        for truthy in ["1", "true", "yes", "on", "anything"] {
+            assert!(
+                parse_recording_flag(Some(truthy)),
+                "{truthy:?} should be truthy"
+            );
+        }
+    }
+
+    #[test]
+    fn missing_file_loads_as_empty_set_instead_of_panicking() {
+        let state = PoolRelatedState::load(&scratch_path("missing"));
+        assert_eq!(state.related_ids.len(), 0);
+    }
+
+    #[test]
+    fn learned_ids_persist_and_reload() {
+        let path = scratch_path("roundtrip");
+        let state = PoolRelatedState::load(&path);
+        let (a, b) = (id(10), id(11));
+
+        state.record(&path, &a);
+        state.record(&path, &b);
+        state.record(&path, &a);
+
+        let written = std::fs::read_to_string(&path).expect("file should have been created");
+        assert_eq!(
+            written.lines().count(),
+            2,
+            "one line per newly learned id, repeats must not append:\n{written}"
+        );
+
+        let reloaded = PoolRelatedState::load(&path);
+        assert!(reloaded.related_ids.contains(&a));
+        assert!(reloaded.related_ids.contains(&b));
+        assert_eq!(reloaded.related_ids.len(), 2);
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn an_unwritable_file_still_learns_in_memory() {
+        // Make the intended parent directory path point through an existing regular file,
+        // so both the read and the create_dir_all inside open_append fail. Learning must
+        // degrade to in-memory instead of taking the node down.
+        let blocker = scratch_path("unwritable_blocker");
+        std::fs::write(&blocker, b"not a directory").expect("setup");
+        let path = blocker.join("nested/pool_related_ids.txt");
+
+        let state = PoolRelatedState::load(&path);
+        let a = id(20);
+        state.record(&path, &a);
+
+        assert!(state.related_ids.contains(&a));
+
+        let _ = std::fs::remove_file(&blocker);
     }
 }
