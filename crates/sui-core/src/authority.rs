@@ -9,6 +9,7 @@ use crate::accumulators::object_funds_checker::metrics::ObjectFundsCheckerMetric
 use crate::accumulators::transaction_rewriting::rewrite_transaction_for_coin_reservations;
 use crate::accumulators::unsettled_object_withdrawals::UnsettledObjectWithdrawals;
 use crate::accumulators::{self, AccumulatorSettlementTxBuilder};
+use crate::cache_update_handler::CacheUpdateHandler;
 use crate::checkpoints::CheckpointBuilderError;
 use crate::checkpoints::CheckpointBuilderResult;
 use crate::congestion_tracker::CongestionTracker;
@@ -1063,6 +1064,11 @@ pub struct AuthorityState {
     /// Created once per process, then re-attached to each new `AuthorityPerEpochStore`
     /// at reconfiguration.
     transaction_deny_config_manager: Arc<TransactionDenyConfigManager>,
+
+    /// MEV patch (block A): pushes committed pool-related objects to out-of-process
+    /// simulators. `None` unless `mev-cache-update-socket` is configured, so a normal
+    /// validator never pays for it.
+    mev_cache_updates: Option<CacheUpdateHandler>,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.
@@ -1883,6 +1889,10 @@ impl AuthorityState {
         // Allow testing what happens if we crash here.
         fail_point!("crash");
 
+        // MEV patch (block A): read before the cache write consumes the Arc. Never
+        // fails the commit.
+        self.notify_mev_cache_updates(certificate, &transaction_outputs);
+
         self.get_cache_writer()
             .write_transaction_outputs(epoch_store.epoch(), transaction_outputs);
 
@@ -1906,6 +1916,38 @@ impl AuthorityState {
         }
 
         Ok(())
+    }
+
+    /// MEV patch (block A): push committed objects that out-of-process simulators are
+    /// known to care about, so their caches stay warm without polling.
+    ///
+    /// Infallible and non-blocking by construction: the transport drops frames when a
+    /// subscriber is slow, and the whole path is skipped unless the socket is configured.
+    fn notify_mev_cache_updates(
+        &self,
+        certificate: &VerifiedExecutableTransaction,
+        outputs: &TransactionOutputs,
+    ) {
+        let Some(handler) = self.mev_cache_updates.as_ref() else {
+            return;
+        };
+        // System transactions rewrite pools and system objects wholesale and would
+        // dominate the stream, so relay-patch skipped them too.
+        if certificate.transaction_data().is_system_tx() || outputs.written.is_empty() {
+            return;
+        }
+
+        let related = crate::pool_related::related_ids();
+        let objects: Vec<_> = outputs
+            .written
+            .iter()
+            .filter(|(id, object)| {
+                related.contains(*id) || crate::cache_update_handler::is_watched_object(object)
+            })
+            .map(|(id, object)| (*id, object.clone()))
+            .collect();
+
+        handler.notify_written(objects);
     }
 
     fn update_metrics(
@@ -3710,6 +3752,13 @@ impl AuthorityState {
             );
         }
 
+        // Bound before `config` moves into the state; spawning the accept and writer
+        // tasks requires the runtime this async fn already runs in.
+        let mev_cache_updates = config
+            .mev_cache_update_socket
+            .clone()
+            .map(CacheUpdateHandler::new);
+
         let state = Arc::new(AuthorityState {
             name,
             secret,
@@ -3747,6 +3796,7 @@ impl AuthorityState {
             pending_post_processing: Arc::new(DashMap::new()),
             post_processing_semaphore: Arc::new(tokio::sync::Semaphore::new(num_cpus::get())),
             transaction_deny_config_manager,
+            mev_cache_updates,
         });
         state.init_object_funds_checker().await;
 
