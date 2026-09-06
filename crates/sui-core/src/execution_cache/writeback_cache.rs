@@ -458,7 +458,7 @@ pub struct WritebackCache {
 }
 
 macro_rules! check_cache_entry_by_version {
-    ($self: ident, $table: expr, $level: expr, $cache: expr, $version: expr) => {
+    ($self: ident, $table: expr, $level: expr, $cache: expr, $version: expr, $object_id: expr) => {
         $self.metrics.record_cache_request($table, $level);
         if let Some(cache) = $cache {
             if let Some(entry) = cache.get(&$version) {
@@ -475,12 +475,12 @@ macro_rules! check_cache_entry_by_version {
                 }
             }
         }
-        $self.metrics.record_cache_miss($table, $level);
+        $self.record_cache_miss($table, $level, Some(&$object_id));
     };
 }
 
 macro_rules! check_cache_entry_by_latest {
-    ($self: ident, $table: expr, $level: expr, $cache: expr) => {
+    ($self: ident, $table: expr, $level: expr, $cache: expr, $object_id: expr) => {
         $self.metrics.record_cache_request($table, $level);
         if let Some(cache) = $cache {
             if let Some((version, entry)) = cache.get_highest() {
@@ -490,7 +490,7 @@ macro_rules! check_cache_entry_by_latest {
                 panic!("empty CachedVersionMap should have been removed");
             }
         }
-        $self.metrics.record_cache_miss($table, $level);
+        $self.record_cache_miss($table, $level, Some(&$object_id));
     };
 }
 
@@ -679,14 +679,16 @@ impl WritebackCache {
                     "object_by_version",
                     "uncommitted",
                     dirty_entry,
-                    version
+                    version,
+                    *object_id
                 );
                 check_cache_entry_by_version!(
                     self,
                     "object_by_version",
                     "committed",
                     cached_entry,
-                    version
+                    version,
+                    *object_id
                 );
                 CacheResult::Miss
             },
@@ -773,7 +775,7 @@ impl WritebackCache {
                 }
             }
         } else {
-            self.metrics.record_cache_miss(request_type, "object_by_id");
+            self.record_cache_miss(request_type, "object_by_id", Some(object_id));
         }
 
         Self::with_locked_cache_entries(
@@ -781,8 +783,20 @@ impl WritebackCache {
             &self.cached.object_cache,
             object_id,
             |dirty_entry, cached_entry| {
-                check_cache_entry_by_latest!(self, request_type, "uncommitted", dirty_entry);
-                check_cache_entry_by_latest!(self, request_type, "committed", cached_entry);
+                check_cache_entry_by_latest!(
+                    self,
+                    request_type,
+                    "uncommitted",
+                    dirty_entry,
+                    *object_id
+                );
+                check_cache_entry_by_latest!(
+                    self,
+                    request_type,
+                    "committed",
+                    cached_entry,
+                    *object_id
+                );
                 CacheResult::Miss
             },
         )
@@ -803,14 +817,16 @@ impl WritebackCache {
                     "marker_by_version",
                     "uncommitted",
                     dirty_entry,
-                    object_key.version()
+                    object_key.version(),
+                    object_key.id().id()
                 );
                 check_cache_entry_by_version!(
                     self,
                     "marker_by_version",
                     "committed",
                     cached_entry,
-                    object_key.version()
+                    object_key.version(),
+                    object_key.id().id()
                 );
                 CacheResult::Miss
             },
@@ -827,8 +843,20 @@ impl WritebackCache {
             &self.cached.marker_cache,
             &(epoch_id, object_id),
             |dirty_entry, cached_entry| {
-                check_cache_entry_by_latest!(self, "marker_latest", "uncommitted", dirty_entry);
-                check_cache_entry_by_latest!(self, "marker_latest", "committed", cached_entry);
+                check_cache_entry_by_latest!(
+                    self,
+                    "marker_latest",
+                    "uncommitted",
+                    dirty_entry,
+                    object_id.id()
+                );
+                check_cache_entry_by_latest!(
+                    self,
+                    "marker_latest",
+                    "committed",
+                    cached_entry,
+                    object_id.id()
+                );
                 CacheResult::Miss
             },
         )
@@ -1367,6 +1395,24 @@ impl WritebackCache {
         self.packages.invalidate_all();
         assert_empty(&self.packages);
     }
+
+    /// MEV patch (block B): upstream metrics recording plus pool-related id self-learning.
+    ///
+    /// Cache misses that carry an object id go through here so the id can be fed to
+    /// [`crate::pool_related`]. Misses with no object id (transactions, effects, events)
+    /// keep calling `self.metrics.record_cache_miss` directly, which is why upstream's
+    /// `execution_cache::metrics` needs no change.
+    fn record_cache_miss(
+        &self,
+        table: &'static str,
+        level: &'static str,
+        object_id: Option<&ObjectID>,
+    ) {
+        self.metrics.record_cache_miss(table, level);
+        if let Some(object_id) = object_id {
+            crate::pool_related::on_cache_miss(table, level, object_id);
+        }
+    }
 }
 
 fn account_amount_from_object(account_obj: &Object) -> u128 {
@@ -1517,7 +1563,7 @@ impl ObjectCacheRead for WritebackCache {
             self.metrics.record_cache_hit("package", "package_cache");
             return Ok(Some(p));
         } else {
-            self.metrics.record_cache_miss("package", "package_cache");
+            self.record_cache_miss("package", "package_cache", Some(package_id));
         }
 
         // We try the dirty objects cache as well before going to the database. This is necessary
@@ -1706,8 +1752,7 @@ impl ObjectCacheRead for WritebackCache {
                             return None;
                         }
                     } else {
-                        self.metrics
-                            .record_cache_miss("object_lt_or_eq_version", $level);
+                        self.record_cache_miss("object_lt_or_eq_version", $level, Some(&object_id));
                     }
                 }
             };
@@ -1745,8 +1790,7 @@ impl ObjectCacheRead for WritebackCache {
                 }
             }
         }
-        self.metrics
-            .record_cache_miss("object_lt_or_eq_version", "object_by_id");
+        self.record_cache_miss("object_lt_or_eq_version", "object_by_id", Some(&object_id));
 
         Self::with_locked_cache_entries(
             &self.dirty.objects,
