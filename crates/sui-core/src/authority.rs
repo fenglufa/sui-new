@@ -204,6 +204,7 @@ use crate::overload_monitor::{AuthorityOverloadInfo, overload_monitor_accept_tx}
 use crate::stake_aggregator::StakeAggregator;
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
+use crate::tx_handler::TxHandler;
 
 #[cfg(msim)]
 pub use crate::checkpoints::checkpoint_executor::utils::{
@@ -1069,6 +1070,11 @@ pub struct AuthorityState {
     /// simulators. `None` unless `mev-cache-update-socket` is configured, so a normal
     /// validator never pays for it.
     mev_cache_updates: Option<CacheUpdateHandler>,
+
+    /// MEV patch (block A): pushes committed effects and events to the bot's tx
+    /// collector. `None` unless `mev-tx-socket` is configured. Arc'd because
+    /// post-processing runs on a blocking task that needs its own handle.
+    mev_tx_updates: Option<Arc<TxHandler>>,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.
@@ -3294,6 +3300,7 @@ impl AuthorityState {
                 effects,
                 inner_temporary_store,
                 epoch_store,
+                self.mev_tx_updates.as_deref(),
                 true, // acquire_locks
             );
 
@@ -3335,6 +3342,7 @@ impl AuthorityState {
         let effects = effects.clone();
         let inner_temporary_store = inner_temporary_store.clone();
         let epoch_store = epoch_store.clone();
+        let mev_tx_handler = self.mev_tx_updates.clone();
 
         // spawn post processing on a blocking thread
         tokio::spawn(async move {
@@ -3361,6 +3369,7 @@ impl AuthorityState {
                     &effects,
                     &inner_temporary_store,
                     &epoch_store,
+                    mev_tx_handler.as_deref(),
                     false, // acquire_locks
                 );
 
@@ -3394,6 +3403,7 @@ impl AuthorityState {
         effects: &TransactionEffects,
         inner_temporary_store: &InnerTemporaryStore,
         epoch_store: &Arc<AuthorityPerEpochStore>,
+        mev_tx_handler: Option<&TxHandler>,
         acquire_locks: bool,
     ) -> SuiResult<(StagedBatch, IndexStoreCacheUpdatesWithLocks)> {
         let _scope = monitored_scope("Execution::post_process_one_tx");
@@ -3430,7 +3440,7 @@ impl AuthorityState {
         .tap_err(|e| error!(?tx_digest, "Post processing - Couldn't index tx: {e}"))
         .expect("Indexing tx should not fail");
 
-        let effects: SuiTransactionBlockEffects = effects.clone().try_into()?;
+        let sui_effects: SuiTransactionBlockEffects = effects.clone().try_into()?;
         let events = Self::make_transaction_block_events(
             backing_package_store,
             events.clone(),
@@ -3439,9 +3449,22 @@ impl AuthorityState {
             epoch_store,
             inner_temporary_store,
         )?;
+
+        // MEV patch (block A): hand the bot this transaction's effects and events.
+        // Pushing from post-processing rather than commit_certificate reuses the event
+        // type layouts that were just resolved for the node's own event subscriptions,
+        // so the push adds no layout work to the commit path.
+        if let Some(handler) = mev_tx_handler
+            && !certificate.transaction_data().is_system_tx()
+            && !events.data.is_empty()
+            && !inner_temporary_store.written.is_empty()
+        {
+            handler.notify_effects_events(effects, events.data.clone());
+        }
+
         // Emit events
         subscription_handler
-            .process_tx(certificate.data().transaction_data(), &effects, &events)
+            .process_tx(certificate.data().transaction_data(), &sui_effects, &events)
             .tap_ok(|_| metrics.post_processing_total_tx_had_event_processed.inc())
             .tap_err(|e| {
                 warn!(
@@ -3759,6 +3782,11 @@ impl AuthorityState {
             .clone()
             .map(CacheUpdateHandler::new);
 
+        let mev_tx_updates = config
+            .mev_tx_socket
+            .clone()
+            .map(|path| Arc::new(TxHandler::new(path)));
+
         let state = Arc::new(AuthorityState {
             name,
             secret,
@@ -3797,6 +3825,7 @@ impl AuthorityState {
             post_processing_semaphore: Arc::new(tokio::sync::Semaphore::new(num_cpus::get())),
             transaction_deny_config_manager,
             mev_cache_updates,
+            mev_tx_updates,
         });
         state.init_object_funds_checker().await;
 

@@ -29,6 +29,7 @@ mod fallback_fetch;
 pub mod gasless_rate_limiter;
 pub mod global_state_hasher;
 pub mod jsonrpc_index;
+pub(crate) mod mev_socket;
 pub mod metrics;
 pub mod mock_checkpoint_builder;
 pub mod mock_consensus;
@@ -60,6 +61,7 @@ mod transaction_input_loader;
 pub mod transaction_orchestrator;
 mod transaction_outputs;
 mod transaction_signing_filter;
+pub(crate) mod tx_handler;
 pub mod validator_client_monitor;
 
 #[cfg(test)]

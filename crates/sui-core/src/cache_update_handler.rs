@@ -10,148 +10,68 @@
 //
 // The bot reads it in `DBSimulator::spawn_update_thread` with `read_exact` +
 // `bcs::from_bytes`, so the framing and byte order here are load-bearing.
+//
+// Socket plumbing, queueing and subscriber lifecycle live in `mev_socket`, shared
+// with the transaction stream, which uses a different payload but must behave the
+// same way toward the commit path.
 
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::path::PathBuf;
 use std::sync::OnceLock;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::time::Duration;
 
 use sui_types::base_types::ObjectID;
 use sui_types::base_types::SuiAddress;
 use sui_types::object::Object;
 use sui_types::object::Owner;
-use tokio::io::AsyncWriteExt;
-use tokio::net::{UnixListener, UnixStream};
-use tokio::sync::mpsc;
-use tracing::{debug, error, info, warn};
+use tracing::error;
 
-/// Frames queued ahead of the writer task. When this fills up the commit path is
-/// faster than the consumer, so frames are dropped rather than applied as back
-/// pressure: a stale cache is recovered by the next push, a stalled validator is not.
-const QUEUE_DEPTH: usize = 1024;
+use crate::mev_socket::SocketFanOut;
 
-/// Write deadline per connection. A client that stalls past this is disconnected
-/// instead of holding the writer task (and every other client) behind it.
-const WRITE_TIMEOUT: Duration = Duration::from_secs(5);
-
-/// Warn about dropped frames at most this often, so a persistently slow consumer
-/// does not flood the log.
-const DROP_LOG_INTERVAL: u64 = 1000;
-
-/// Owns the socket and the task that drains it. Cheap to hand out, but only ever
-/// constructed once per node process.
+/// One socket per node process, handed out by reference from `AuthorityState`.
 #[derive(Debug)]
 pub struct CacheUpdateHandler {
-    frames: mpsc::Sender<Vec<(ObjectID, Object)>>,
-    /// Live client count, checked before queueing so an idle node does no work.
-    connections: Arc<AtomicUsize>,
-    dropped_frames: Arc<AtomicU64>,
+    fanout: SocketFanOut<Vec<(ObjectID, Object)>>,
 }
 
 impl CacheUpdateHandler {
     /// Bind `socket_path` and start the writer task.
     ///
-    /// A bind failure is logged and leaves the handler inert. This runs during node
-    /// startup, where aborting the node over an optional push channel would be worse
-    /// than not offering it.
+    /// A bind failure leaves the handler inert rather than panicking: this runs
+    /// during node startup, where aborting the node over an optional push channel
+    /// would be worse than not offering it.
     pub fn new(socket_path: PathBuf) -> Self {
-        let (frames_tx, frames_rx) = mpsc::channel(QUEUE_DEPTH);
-        let (incoming_tx, incoming_rx) = mpsc::channel(QUEUE_DEPTH);
-        let connections = Arc::new(AtomicUsize::new(0));
-        let dropped_frames = Arc::new(AtomicU64::new(0));
-
-        let listener = match bind_socket(&socket_path) {
-            Ok(listener) => listener,
-            Err(e) => {
-                warn!(
-                    path = %socket_path.display(),
-                    error = %e,
-                    "cache update socket unavailable, object push disabled"
-                );
-                return Self {
-                    frames: frames_tx,
-                    connections,
-                    dropped_frames,
-                };
-            }
-        };
-
-        info!(path = %socket_path.display(), "listening for cache update subscribers");
-
-        let accept_connections = Arc::clone(&connections);
-        tokio::spawn(async move {
-            loop {
-                match listener.accept().await {
-                    Ok((stream, _addr)) => {
-                        accept_connections.fetch_add(1, Ordering::Relaxed);
-                        info!("cache update subscriber connected");
-                        if incoming_tx.send(stream).await.is_err() {
-                            // Writer task is gone, so nothing can serve this client.
-                            break;
-                        }
-                    }
-                    Err(e) => {
-                        // Accept errors are transient on some platforms (EMFILE, signal
-                        // interrupts). Back off and keep listening rather than tearing
-                        // down the push path for the whole process lifetime.
-                        error!(error = %e, "error accepting cache update connection");
-                        tokio::time::sleep(Duration::from_millis(100)).await;
-                    }
-                }
-            }
-            debug!("cache update accept loop stopped");
-        });
-
-        let writer_connections = Arc::clone(&connections);
-        let writer_dropped = Arc::clone(&dropped_frames);
-        let writer_path = socket_path.clone();
-        tokio::spawn(async move {
-            run_writer(frames_rx, incoming_rx, writer_connections, writer_dropped).await;
-            // The listener lives in the accept task, so the socket file is only
-            // removable once the writer is done with it.
-            let _ = std::fs::remove_file(&writer_path);
-            debug!(path = %writer_path.display(), "cache update writer stopped");
-        });
-
         Self {
-            frames: frames_tx,
-            connections,
-            dropped_frames,
+            fanout: SocketFanOut::new(
+                socket_path,
+                "cache update",
+                |objects: &Vec<(ObjectID, Object)>| frame_cache_update(objects),
+            ),
         }
     }
 
     /// Queue `objects` for delivery. Never blocks the caller.
     pub fn notify_written(&self, objects: Vec<(ObjectID, Object)>) {
-        if objects.is_empty() || self.connections.load(Ordering::Relaxed) == 0 {
+        if objects.is_empty() || !self.fanout.has_subscribers() {
             return;
         }
-
-        match self.frames.try_send(objects) {
-            Ok(()) => {}
-            Err(mpsc::error::TrySendError::Full(_)) => {
-                let total = self.dropped_frames.fetch_add(1, Ordering::Relaxed) + 1;
-                if total % DROP_LOG_INTERVAL == 1 {
-                    warn!(
-                        dropped_total = total,
-                        "cache update queue full, dropping object push; subscriber is too slow"
-                    );
-                }
-            }
-            Err(mpsc::error::TrySendError::Closed(_)) => {
-                debug!("cache update writer stopped, object push disabled");
-            }
-        }
+        self.fanout.push(objects);
     }
 }
 
-/// Remove a stale socket left by a previous run, then bind.
-fn bind_socket(path: &Path) -> std::io::Result<UnixListener> {
-    if path.exists() {
-        let _ = std::fs::remove_file(path);
-    }
-    UnixListener::bind(path)
+/// Encode one frame. Returns `None` if the objects cannot be serialized, in which
+/// case the writer skips the frame for every subscriber.
+fn frame_cache_update(objects: &[(ObjectID, Object)]) -> Option<Vec<u8>> {
+    let payload = match bcs::to_bytes(objects) {
+        Ok(payload) => payload,
+        Err(e) => {
+            error!(error = %e, "failed to serialize cache update, skipping frame");
+            return None;
+        }
+    };
+    let mut frame_bytes = Vec::with_capacity(4 + payload.len());
+    frame_bytes.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+    frame_bytes.extend_from_slice(&payload);
+    Some(frame_bytes)
 }
 
 /// Comma-separated addresses whose newly written objects are always pushed, on top of
@@ -190,7 +110,7 @@ fn watched_owners() -> Option<&'static HashSet<SuiAddress>> {
                         parsed.insert(address);
                     }
                     Err(e) => {
-                        warn!(entry, error = %e, "ignoring invalid watched owner address");
+                        tracing::warn!(entry, error = %e, "ignoring invalid watched owner address");
                     }
                 }
             }
@@ -199,94 +119,16 @@ fn watched_owners() -> Option<&'static HashSet<SuiAddress>> {
         .as_ref()
 }
 
-/// Single owner of every client connection, so writes are serialized without a lock
-/// and one payload is serialized once no matter how many subscribers there are.
-async fn run_writer(
-    mut frames: mpsc::Receiver<Vec<(ObjectID, Object)>>,
-    mut incoming: mpsc::Receiver<UnixStream>,
-    connections: Arc<AtomicUsize>,
-    dropped_frames: Arc<AtomicU64>,
-) {
-    let mut clients: Vec<UnixStream> = Vec::new();
-
-    loop {
-        tokio::select! {
-            biased;
-
-            maybe_stream = incoming.recv() => {
-                match maybe_stream {
-                    Some(stream) => clients.push(stream),
-                    None => break,
-                }
-            }
-
-            maybe_objects = frames.recv() => {
-                let Some(objects) = maybe_objects else {
-                    // Handler dropped: shut down and release the socket path.
-                    break;
-                };
-                if clients.is_empty() {
-                    // Nothing to deliver. Counted as dropped so an operator can tell
-                    // the push path was active but had no audience.
-                    dropped_frames.fetch_add(1, Ordering::Relaxed);
-                    continue;
-                }
-                if deliver(&objects, &mut clients).await == 0 {
-                    connections.store(0, Ordering::Relaxed);
-                    continue;
-                }
-                connections.store(clients.len(), Ordering::Relaxed);
-            }
-        }
-    }
-}
-
-/// Write one framed frame to every client, dropping those that fail or stall.
-/// Returns how many clients are still live.
-async fn deliver(objects: &[(ObjectID, Object)], clients: &mut Vec<UnixStream>) -> usize {
-    let payload = match bcs::to_bytes(objects) {
-        Ok(payload) => payload,
-        Err(e) => {
-            // Not a per-client problem; skip the frame for everyone.
-            error!(error = %e, "failed to serialize cache update, skipping frame");
-            return clients.len();
-        }
-    };
-    let mut frame_bytes = Vec::with_capacity(4 + payload.len());
-    frame_bytes.extend_from_slice(&(payload.len() as u32).to_le_bytes());
-    frame_bytes.extend_from_slice(&payload);
-
-    let mut retained = Vec::with_capacity(clients.len());
-    for mut client in clients.drain(..) {
-        let written = tokio::time::timeout(WRITE_TIMEOUT, async {
-            client.write_all(&frame_bytes).await
-        })
-        .await;
-        match written {
-            Ok(Ok(())) => retained.push(client),
-            Ok(Err(e)) => {
-                info!(error = %e, "dropping cache update subscriber, write failed");
-            }
-            Err(_) => {
-                warn!(
-                    timeout_ms = WRITE_TIMEOUT.as_millis(),
-                    "dropping cache update subscriber, write timed out"
-                );
-            }
-        }
-    }
-    let live = retained.len();
-    *clients = retained;
-    live
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::Duration;
     use sui_types::base_types::SequenceNumber;
     use sui_types::digests::TransactionDigest;
     use sui_types::object::MoveObject;
     use tokio::io::AsyncReadExt;
+    use tokio::net::UnixStream;
 
     fn scratch_socket(label: &str) -> PathBuf {
         static COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -316,7 +158,7 @@ mod tests {
     /// guaranteed to be queued rather than short-circuited by the zero-client check.
     async fn await_subscribers(handler: &CacheUpdateHandler, expected: usize) {
         for _ in 0..200 {
-            if handler.connections.load(Ordering::Relaxed) >= expected {
+            if handler.fanout.subscriber_count() >= expected {
                 return;
             }
             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -402,13 +244,13 @@ mod tests {
     #[tokio::test]
     async fn an_unbindable_socket_disables_push_instead_of_panicking() {
         let handler = CacheUpdateHandler::new(PathBuf::from("/nonexistent-dir/sui.sock"));
-        assert_eq!(handler.connections.load(Ordering::Relaxed), 0);
+        assert_eq!(handler.fanout.subscriber_count(), 0);
 
         let a = coin(5, 500);
         handler.notify_written(vec![(a.id(), a)]);
         handler.notify_written(vec![]);
         // Neither call panicked or queued work, so the commit path is unaffected.
-        assert_eq!(handler.connections.load(Ordering::Relaxed), 0);
+        assert_eq!(handler.fanout.subscriber_count(), 0);
     }
 
     #[test]
@@ -418,5 +260,42 @@ mod tests {
         // watched. This is the case that relay-patch turned into a panic on every
         // commit; here it must simply be false.
         assert!(!is_watched_object(&a));
+    }
+
+    /// A frame the framer rejects must be skipped, not delivered as garbage and not
+    /// taken down the whole channel with it.
+    #[tokio::test]
+    async fn an_unencodable_frame_is_skipped_without_losing_later_frames() {
+        let path = scratch_socket("badframe");
+        let fanout: SocketFanOut<Vec<(ObjectID, Object)>> = SocketFanOut::new(
+            path.clone(),
+            "test channel",
+            |objects: &Vec<(ObjectID, Object)>| {
+                if objects.is_empty() {
+                    None
+                } else {
+                    frame_cache_update(objects)
+                }
+            },
+        );
+
+        let mut client = UnixStream::connect(&path).await.expect("connect");
+        for _ in 0..200 {
+            if fanout.subscriber_count() > 0 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+
+        fanout.push(vec![]);
+        let a = coin(7, 700);
+        fanout.push(vec![(a.id(), a.clone())]);
+
+        let received = read_one_frame(&mut client).await;
+        assert_eq!(received.len(), 1, "only the frame that encoded");
+        assert_eq!(received[0].1.digest(), a.digest());
+
+        drop(fanout);
+        let _ = std::fs::remove_file(&path);
     }
 }
