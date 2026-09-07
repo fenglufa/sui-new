@@ -107,6 +107,9 @@ use super::{
 pub mod writeback_cache_tests;
 
 #[cfg(test)]
+#[path = "unit_tests/mev_cache_refresh_tests.rs"]
+mod mev_cache_refresh_tests;
+#[cfg(test)]
 #[path = "unit_tests/notify_read_input_objects_tests.rs"]
 mod notify_read_input_objects_tests;
 
@@ -2357,7 +2360,115 @@ impl TransactionCacheRead for WritebackCache {
     }
 }
 
+/// Catch the backing store up with the RocksDB instance its process does not own.
+///
+/// Secondary instances are a RocksDB feature, so a tidehunter build has no
+/// equivalent and the call is rejected rather than silently doing nothing. This
+/// matches `update_underlying`'s contract: it errors when the store is not a
+/// secondary instance, and a tidehunter store never is.
+#[cfg(not(tidehunter))]
+fn catch_up_with_primary(store: &AuthorityStore) -> SuiResult<()> {
+    store
+        .perpetual_tables
+        .try_catch_up_with_primary_all()
+        .map_err(|e| {
+            SuiErrorKind::UnexpectedMessage(format!(
+                "failed to catch execution cache store up with primary: {e}"
+            ))
+            .into()
+        })
+}
+
+#[cfg(tidehunter)]
+fn catch_up_with_primary(_store: &AuthorityStore) -> SuiResult<()> {
+    Err(SuiErrorKind::UnexpectedMessage(
+        "catching the execution cache up with a database primary requires rocksdb".into(),
+    )
+    .into())
+}
+
+/// Drop dirty entries the now-caught-up store can answer, and the latest-cache entries
+/// that went with them.
+///
+/// `reload_objects` parks pushed objects in the dirty set because that is the only place
+/// the cache is allowed to lead the store. Once a catch-up brings the store up to or past
+/// them they are redundant, and keeping them would grow without bound on a long-running
+/// simulator. Entries the store has not reached yet stay, so a pushed version never
+/// disappears before it is durable somewhere a read can find it.
+fn drop_reloaded_entries_the_store_covers(cache: &WritebackCache) {
+    let covered: Vec<ObjectID> = cache
+        .dirty
+        .objects
+        .iter()
+        .filter(|entry| match entry.value().get_highest() {
+            None => true,
+            Some((highest_version, _)) => matches!(
+                cache.store.get_latest_object_or_tombstone(*entry.key()),
+                Ok(Some((key, _))) if key.1 >= *highest_version
+            ),
+        })
+        .map(|entry| *entry.key())
+        .collect();
+
+    // Collected first: DashMap guards taken here would deadlock against the removals.
+    for object_id in covered {
+        cache.dirty.objects.remove(&object_id);
+        cache.object_by_id_cache.invalidate(&object_id);
+    }
+}
+
 impl ExecutionCacheWrite for WritebackCache {
+    /// MEV patch (block D): see `ExecutionCacheWrite`.
+    ///
+    /// Goes through `write_object_entry`, the same path a committed write uses, because
+    /// the dirty set is the one place the cache may legitimately hold a version the
+    /// backing store does not: `object_by_id_cache` is asserted (in debug builds) to agree
+    /// with the dirty set or the store, so publishing there alone would be incoherent.
+    ///
+    /// A version no newer than what is already known is skipped. Both `CachedVersionMap`
+    /// and `MonotonicCache` treat a non-increasing insert as a fatal invariant violation,
+    /// while out-of-order arrival is ordinary for a pushed stream - a preload racing the
+    /// live feed, or a duplicate delivery after a reconnect.
+    fn reload_objects(&self, objects: Vec<(ObjectID, Object)>) {
+        for (object_id, object) in objects {
+            let version = object.version();
+
+            let already_in_dirty = self
+                .dirty
+                .objects
+                .get(&object_id)
+                .and_then(|entry| entry.get_highest().map(|(highest, _)| *highest))
+                .is_some_and(|highest| highest >= version);
+            if already_in_dirty {
+                continue;
+            }
+
+            if let CacheResult::Hit((cached_version, _)) =
+                self.get_object_entry_by_id_cache_only("reload_objects", &object_id)
+                && cached_version >= version
+            {
+                continue;
+            }
+
+            self.write_object_entry(&object_id, version, object.into());
+        }
+    }
+
+    fn update_underlying(&self, clear_cache: bool) -> SuiResult<()> {
+        catch_up_with_primary(&self.store)?;
+        drop_reloaded_entries_the_store_covers(self);
+
+        if clear_cache {
+            // Deliberately not the dirty set: that holds this process's own staged
+            // writes, which a refresh of the underlying store must not discard.
+            self.cached.clear_and_assert_empty();
+            self.object_by_id_cache.invalidate_all();
+            self.packages.invalidate_all();
+        }
+
+        Ok(())
+    }
+
     fn validate_owned_object_versions(&self, owned_input_objects: &[ObjectRef]) -> SuiResult {
         ObjectLocks::validate_owned_object_versions(self, owned_input_objects)
     }
