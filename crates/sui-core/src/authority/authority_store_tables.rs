@@ -450,6 +450,27 @@ impl AuthorityPerpetualTables {
         )
     }
 
+    /// Open a live node's database as a RocksDB secondary instance, typed as the
+    /// read-write struct so consumers written against `AuthorityStore` can attach to it
+    /// without taking the primary lock.
+    ///
+    /// Reads observe the node's committed state after each `try_catch_up_with_primary`;
+    /// the secondary instance rejects writes. Used by the out-of-process MEV simulator
+    /// (block D), which trades against the node's own database instead of mirroring it
+    /// over RPC.
+    ///
+    /// Secondary mode is a RocksDB-backend feature, so this does not exist on
+    /// tidehunter builds.
+    #[cfg(not(tidehunter))]
+    pub fn open_readonly_as_rw(parent_path: &Path) -> Self {
+        Self::open_tables_read_only_as_rw(
+            Self::path(parent_path),
+            None,
+            MetricConf::new("perpetual_readonly_as_rw"),
+            None,
+        )
+    }
+
     #[cfg(tidehunter)]
     pub fn open_readonly(parent_path: &Path) -> Self {
         Self::open(parent_path, None, None)

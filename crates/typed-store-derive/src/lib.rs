@@ -590,6 +590,48 @@ pub fn derive_dbmap_utils_general(input: TokenStream) -> TokenStream {
                     ) -> #secondary_db_map_struct_name #generics {
                     #secondary_db_map_struct_name::open_tables_read_only(primary_path, with_secondary_path, metric_conf, global_db_options_override)
                 }
+
+                /// Open the tables as a secondary instance of a database owned by another
+                /// process, but return the read-write struct instead of the read-only one.
+                ///
+                /// For consumers written against the read-write type that must not take the
+                /// primary lock: reads see the primary's committed state after each
+                /// `try_catch_up_with_primary`, and the secondary instance rejects writes.
+                #[allow(unused_parens)]
+                pub fn open_tables_read_only_as_rw(
+                    primary_path: std::path::PathBuf,
+                    with_secondary_path: Option<std::path::PathBuf>,
+                    metric_conf: typed_store::rocks::MetricConf,
+                    global_db_options_override: Option<typed_store::rocksdb::Options>,
+                ) -> Self {
+                    let secondary_path = with_secondary_path.unwrap_or_else(|| {
+                        tempfile::tempdir()
+                            .expect("Failed to open temporary directory")
+                            .keep()
+                    });
+                    let inner = #intermediate_db_map_struct_name::open_tables_impl(
+                        primary_path,
+                        Some(secondary_path),
+                        metric_conf,
+                        global_db_options_override,
+                        None,
+                        false,
+                    );
+                    Self {
+                        #(
+                            #field_names: inner.#field_names,
+                        )*
+                    }
+                }
+
+                /// Catch every table up with the primary instance. Only meaningful when the
+                /// tables were opened as a secondary; RocksDB rejects it on a primary.
+                pub fn try_catch_up_with_primary_all(&self) -> eyre::Result<()> {
+                    #(
+                        typed_store::traits::Map::try_catch_up_with_primary(&self.#field_names)?;
+                    )*
+                    Ok(())
+                }
             }
             #secondary_code
         })

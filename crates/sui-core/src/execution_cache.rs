@@ -609,6 +609,18 @@ pub trait ExecutionCacheWrite: Send + Sync {
     /// in question.
     fn write_transaction_outputs(&self, epoch_id: EpochId, tx_outputs: Arc<TransactionOutputs>);
 
+    /// MEV patch (block D): publish objects that were read outside this cache (pushed by
+    /// a node, or read straight from the backing store) so a consumer sharing the cache
+    /// sees them without a round trip to disk. Versions no newer than what is already
+    /// known are ignored, which makes out-of-order or duplicate delivery harmless.
+    fn reload_objects(&self, objects: Vec<(ObjectID, Object)>);
+
+    /// MEV patch (block D): catch the backing store up with the database's primary
+    /// instance, drop anything the caught-up store can now answer, and optionally clear
+    /// cached committed reads so the next read sees the caught-up state. Errors when the
+    /// store was not opened as a secondary instance.
+    fn update_underlying(&self, clear_cache: bool) -> SuiResult<()>;
+
     /// Validate owned object versions and digests without acquiring locks.
     /// Used to validate transaction input before submitting or voting to accept the transaction.
     fn validate_owned_object_versions(&self, owned_input_objects: &[ObjectRef]) -> SuiResult;
