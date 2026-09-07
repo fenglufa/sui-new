@@ -302,6 +302,12 @@ pub struct NodeConfig {
     /// Unset disables the push path entirely.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mev_cache_update_socket: Option<PathBuf>,
+
+    /// MEV patch (block A): Unix socket that committed transaction effects and events
+    /// are pushed to, so an out-of-process bot sees swaps without polling for effects.
+    /// Unset disables the push path entirely.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mev_tx_socket: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
