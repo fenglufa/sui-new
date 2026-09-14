@@ -505,8 +505,7 @@ do_verify() {
         --rpc-url http://localhost:9000 \\
         --db-path "$store" \\
         --config-path "$CONFIG_PATH" \\
-        --preload-path "$POOL_IDS_PATH" \\
-        --use-db-simulator
+        --preload-path "$POOL_IDS_PATH"
 EOF
   echo
   echo "    说明："
@@ -517,7 +516,8 @@ EOF
   echo "      --db-path      必须等于 <YAML db-path>/live/store，否则 simulator 打不开 DB。"
   echo "      --config-path  同一份 fullnode.yaml；bot 会读它拿 genesis，对不上就报错。"
   echo "      --preload-path 与节点共用一份 id 清单，两端不一致是最常见的'没推送'原因。"
-  echo "      --use-db-simulator  必须加，否则走已废弃的 HttpSimulator。"
+  echo "      本地 DB 试算已是唯一路径：bot 侧的 --use-db-simulator 开关与 HttpSimulator 一起"
+  echo "      删掉了（sui-mev 提交 acb9a9f），传这个 flag 会被 clap 直接拒绝。"
 }
 
 usage() {
