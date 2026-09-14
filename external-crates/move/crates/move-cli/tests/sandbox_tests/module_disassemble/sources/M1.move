@@ -1,0 +1,15 @@
+module 0xc::M1 {
+
+    #[allow(unused_field)]
+    public struct S { i: u64 }
+
+    #[allow(deprecated_usage)]
+    public fun foo(x: u64): vector<u64> {
+        let y = bar();
+        vector::singleton(x + y)
+    }
+
+    public fun bar(): u64 {
+        7
+    }
+}

@@ -1,0 +1,66 @@
+//# publish
+
+mvir 0x42::A {
+    public struct Coin has store { value: u64 }
+    public struct T { g: Self::Coin }
+
+    public fun zero(): Self::Coin {
+    label b0:
+        return Coin { value: 0 };
+    }
+    public fun new(g: Self::Coin): Self::T {
+    label b0:
+        return T {g: move(g)};
+    }
+
+}
+
+//# run
+mvir 0x42::m {
+
+import 0x42::A;
+
+entry fun foo() {
+    let zero_resource: A::Coin;
+    let s: A::T;
+label b0:
+    zero_resource = A::zero();
+    // unused resources
+    s = A::new(move(zero_resource));
+
+    return;
+}
+}
+
+//# publish
+mvir 0x43::A {
+    public enum Coin has store { V{ value: u64 } }
+    public enum T { V{ g: Self::Coin } }
+
+    public fun zero(): Self::Coin {
+    label b0:
+        return Coin::V { value: 0 };
+    }
+    public fun new(g: Self::Coin): Self::T {
+    label b0:
+        return T::V {g: move(g)};
+    }
+
+}
+
+//# run
+
+mvir 0x43::m {
+import 0x43::A;
+
+entry fun foo() {
+    let zero_resource: A::Coin;
+    let s: A::T;
+label b0:
+    zero_resource = A::zero();
+    // unused resources
+    s = A::new(move(zero_resource));
+
+    return;
+}
+}

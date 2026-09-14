@@ -1,0 +1,17 @@
+//# publish
+
+mvir 0x1::M {
+    public enum X has drop { V{ v: u64 }}
+    fun id<T>(x: &T): &T {
+    label b0:
+        return move(x);
+    }
+
+    fun t(x: Self::X): u64 {
+        let t: &u64;
+    label b0:
+        &X::V { v: t } = Self::id<Self::X>(&x);
+        return *move(t);
+    }
+}
+

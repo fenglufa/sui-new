@@ -1,0 +1,25 @@
+---
+source: crates/move-compiler/tests/move_check_testsuite.rs
+info:
+  flavor: sui
+  edition: 2024.alpha
+  lint: false
+---
+error[ESC02007]: invalid object declaration
+   ┌─ tests/sui_mode/move_2024/typing/enum_in_struct_position.move:10:17
+   │
+10 │     public enum Obj has key, store {
+   │                 ^^^     --- Enums cannot have the 'key' ability.
+   │                 │        
+   │                 Invalid object 'Obj'
+
+error[ESC02009]: invalid private transfer call
+   ┌─ tests/sui_mode/move_2024/typing/enum_in_struct_position.move:27:9
+   │
+10 │     public enum Obj has key, store {
+   │                              ----- The object has 'store' so 'sui::transfer::public_transfer' can be called instead
+   ·
+26 │     public fun transfer(o: a::m::Obj) {
+   │                            --------- The type 'a::m::Obj' is not declared in the current module
+27 │         transfer::transfer(o, @0)
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid private transfer. The function 'sui::transfer::transfer' is restricted to being called in the object's module, 'a::m'

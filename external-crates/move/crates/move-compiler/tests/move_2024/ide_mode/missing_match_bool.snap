@@ -1,0 +1,30 @@
+---
+source: crates/move-compiler/tests/move_check_testsuite.rs
+info:
+  flavor: core
+  edition: 2024.alpha
+  lint: false
+---
+warning[WC10007]: issue with attribute value
+  ┌─ tests/move_2024/ide_mode/missing_match_bool.move:1:9
+  │
+1 │ #[allow(ide_path_autocomplete,ide_dot_autocomplete)]
+  │         ^^^^^^^^^^^^^^^^^^^^^ Unknown diagnostic filter 'ide_path_autocomplete'
+
+warning[WC10007]: issue with attribute value
+  ┌─ tests/move_2024/ide_mode/missing_match_bool.move:1:31
+  │
+1 │ #[allow(ide_path_autocomplete,ide_dot_autocomplete)]
+  │                               ^^^^^^^^^^^^^^^^^^^^ Unknown diagnostic filter 'ide_dot_autocomplete'
+
+error[EC04036]: non-exhaustive pattern
+  ┌─ tests/move_2024/ide_mode/missing_match_bool.move:4:16
+  │
+4 │         match (true) {
+  │                ^^^^ Pattern 'false' not covered
+
+error[EC04036]: non-exhaustive pattern
+   ┌─ tests/move_2024/ide_mode/missing_match_bool.move:10:16
+   │
+10 │         match (true) {
+   │                ^^^^ Pattern '_' not covered

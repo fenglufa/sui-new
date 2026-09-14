@@ -1,0 +1,125 @@
+//# publish
+// ensure that generic structs instantiated with struct types behave like resources
+mvir 0x1::M1 {
+    public struct MyResource { b: bool }
+    public struct S<T> { t: T }
+
+    // verifer should reject; didn't move resource;
+    public fun p(s: Self::S<Self::MyResource>) {
+    label b0:
+        return;
+    }
+}
+
+//# publish
+mvir 0x1::M2 {
+    public struct MyResource { b: bool }
+    public struct S<T> { t: T }
+
+    // verifier should reject; drops s2 on the floor
+    public fun p(s1: Self::S<Self::MyResource>, s2: Self::S<Self::MyResource>): Self::S<Self::MyResource> {
+    label b0:
+        s1 = move(s2);
+        return move(s1);
+    }
+}
+
+//# publish
+mvir 0x1::M3 {
+    public struct MyResource { b: bool }
+    public struct S<T> { t: T }
+
+    // verifier should reject; copies s
+    public fun p(s: &Self::S<Self::MyResource>): Self::S<Self::MyResource> {
+    label b0:
+        return *move(s);
+    }
+}
+
+//# publish
+mvir 0x1::M4 {
+    public struct MyResource { b: bool }
+    public struct S<T> { t: T }
+
+    // verifier should reject; drops s1 on the floor
+    public fun p(s1: &mut Self::S<Self::MyResource>, s2: Self::S<Self::MyResource>) {
+    label b0:
+        *move(s1) = move(s2);
+        return;
+    }
+}
+
+//# publish
+mvir 0x1::M5 {
+    public struct MyResource { b: bool }
+    public struct S<T> { t: T }
+
+    // verifier should reject; copies s
+    public fun p(s: Self::S<Self::MyResource>): Self::S<Self::MyResource> * Self::S<Self::MyResource> {
+    label b0:
+        return (copy(s), move(s));
+    }
+}
+
+//# publish
+// ensure that generic enums instantiated with enum types behave like resources
+mvir 0x2::M1 {
+    public enum MyResource { V{ b: bool } }
+    public enum S<T> { V{ t: T } }
+
+    // verifer should reject; didn't move resource;
+    public fun p(s: Self::S<Self::MyResource>) {
+    label b0:
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::M2 {
+    public enum MyResource { V{ b: bool } }
+    public enum S<T> { V{ t: T } }
+
+    // verifier should reject; drops s2 on the floor
+    public fun p(s1: Self::S<Self::MyResource>, s2: Self::S<Self::MyResource>): Self::S<Self::MyResource> {
+    label b0:
+        s1 = move(s2);
+        return move(s1);
+    }
+}
+
+//# publish
+mvir 0x2::M3 {
+    public enum MyResource { V{ b: bool } }
+    public enum S<T> { V{ t: T } }
+
+    // verifier should reject; copies s
+    public fun p(s: &Self::S<Self::MyResource>): Self::S<Self::MyResource> {
+    label b0:
+        return *move(s);
+    }
+}
+
+//# publish
+mvir 0x2::M4 {
+    public enum MyResource { V{ b: bool } }
+    public enum S<T> { V{ t: T } }
+
+    // verifier should reject; drops s1 on the floor
+    public fun p(s1: &mut Self::S<Self::MyResource>, s2: Self::S<Self::MyResource>) {
+    label b0:
+        *move(s1) = move(s2);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::M5 {
+    public enum MyResource { V{ b: bool } }
+    public enum S<T> { V{ t: T } }
+
+    // verifier should reject; copies s
+    public fun p(s: Self::S<Self::MyResource>): Self::S<Self::MyResource> * Self::S<Self::MyResource> {
+    label b0:
+        return (copy(s), move(s));
+    }
+}

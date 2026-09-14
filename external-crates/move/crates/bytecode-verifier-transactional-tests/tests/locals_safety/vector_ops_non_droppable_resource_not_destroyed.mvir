@@ -1,0 +1,10 @@
+//# publish
+mvir 0x1::M {
+    public struct R has store { b: bool }
+    fun f() {
+        let v: vector<Self::R>;
+    label b0:
+        v = vector<Self::R; 0>();
+        return;
+    }
+}

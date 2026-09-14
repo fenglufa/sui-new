@@ -1,0 +1,14 @@
+//# publish
+mvir 0x6::M {
+    fun f<T>() {
+    label b0:
+        Self::g<T>();
+        return;
+    }
+
+    fun g<T>() {
+    label b0:
+        Self::f<T>();
+        return;
+    }
+}

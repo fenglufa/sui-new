@@ -1,0 +1,146 @@
+//# publish
+
+// This file contains tests checking that type arguments used in phantom position
+// (phantom arguments) are not considered when deriving the abilities for a struct or enum.
+
+mvir 0x1::M1 {
+    public struct NoAbilities { a: bool }
+}
+
+//# publish
+mvir 0x1::M2 {
+    import 0x1::M1;
+
+    public struct HasDrop<phantom T1, T2> has drop { a: bool }
+
+    // `WriteRef` requires drop
+    fun f(ref: &mut Self::HasDrop<M1::NoAbilities, M1::NoAbilities>) {
+    label b0:
+        *move(ref) = HasDrop<M1::NoAbilities, M1::NoAbilities> { a : true };
+        return;
+    }
+}
+
+//# publish
+mvir 0x1::M3 {
+    import 0x1::M1;
+
+    public struct HasDrop<phantom T1, T2> has drop { a: bool }
+
+    // `Pop` requires drop
+    fun f() {
+    label b0:
+        _ = HasDrop<M1::NoAbilities, M1::NoAbilities> { a: true };
+        return;
+    }
+ }
+
+//# publish
+ mvir 0x1::M4 {
+    import 0x1::M1;
+
+    public struct HasDrop<phantom T1, T2> has drop { a: bool }
+
+    // Leaving value in local requires drop
+    fun f(x: Self::HasDrop<M1::NoAbilities, M1::NoAbilities>) {
+    label b0:
+        return;
+    }
+ }
+
+//# publish
+ mvir 0x1::M5 {
+    import 0x1::M1;
+    public struct HasCopy<phantom T1, T2> has copy { a : bool }
+
+    // `CopyLoc` requires copy
+    fun f(x: Self::HasCopy<M1::NoAbilities, M1::NoAbilities>): Self::HasCopy<M1::NoAbilities, M1::NoAbilities> * Self::HasCopy<M1::NoAbilities, M1::NoAbilities> {
+    label b0:
+        return (copy(x), move(x));
+    }
+ }
+
+//# publish
+mvir 0x1::M9 {
+    import 0x1::M1;
+
+    public struct HasStore<phantom T1, T2> has store { a: bool }
+    public struct RequireStore<T: store> { a: bool }
+
+    fun f(): Self::RequireStore<Self::HasStore<M1::NoAbilities, M1::NoAbilities>> {
+    label b0:
+        return RequireStore<Self::HasStore<M1::NoAbilities, M1::NoAbilities>> { a: true };
+    }
+}
+
+//# publish
+
+mvir 0x2::M1 {
+    public enum NoAbilities { V { a: bool } }
+}
+
+//# publish
+mvir 0x2::M2 {
+    import 0x2::M1;
+
+    public enum HasDrop<phantom T1, T2> has drop { V { a: bool } }
+
+    // `WriteRef` requires drop
+    fun f(ref: &mut Self::HasDrop<M1::NoAbilities, M1::NoAbilities>) {
+    label b0:
+        *move(ref) = HasDrop::V<M1::NoAbilities, M1::NoAbilities> { a : true };
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::M3 {
+    import 0x2::M1;
+
+    public enum HasDrop<phantom T1, T2> has drop { V { a: bool } }
+
+    // `Pop` requires drop
+    fun f() {
+    label b0:
+        _ = HasDrop::V<M1::NoAbilities, M1::NoAbilities> { a: true };
+        return;
+    }
+ }
+
+//# publish
+ mvir 0x2::M4 {
+    import 0x2::M1;
+
+    public enum HasDrop<phantom T1, T2> has drop { V { a: bool } }
+
+    // Leaving value in local requires drop
+    fun f(x: Self::HasDrop<M1::NoAbilities, M1::NoAbilities>) {
+    label b0:
+        return;
+    }
+ }
+
+//# publish
+ mvir 0x2::M5 {
+    import 0x2::M1;
+    public enum HasCopy<phantom T1, T2> has copy { V { a : bool } }
+
+    // `CopyLoc` requires copy
+    fun f(x: Self::HasCopy<M1::NoAbilities, M1::NoAbilities>): Self::HasCopy<M1::NoAbilities, M1::NoAbilities> * Self::HasCopy<M1::NoAbilities, M1::NoAbilities> {
+    label b0:
+        return (copy(x), move(x));
+    }
+ }
+
+//# publish
+mvir 0x2::M9 {
+    import 0x2::M1;
+
+    public enum HasStore<phantom T1, T2> has store { V { a: bool } }
+    public enum RequireStore<T: store> { V { a: bool } }
+
+    fun f(): Self::RequireStore<Self::HasStore<M1::NoAbilities, M1::NoAbilities>> {
+    label b0:
+        return RequireStore::V<Self::HasStore<M1::NoAbilities, M1::NoAbilities>> { a: true };
+    }
+}

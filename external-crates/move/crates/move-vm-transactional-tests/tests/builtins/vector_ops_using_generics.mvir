@@ -1,0 +1,24 @@
+//# publish
+
+mvir 0x42::Tests {
+
+    public fun test<T: copy + drop>(x: T) {
+        let v: vector<T>;
+        label l0:
+        v = vector<T; 0>();
+        assert(vec_len<T>(&v) == 0, 42);
+        vec_push_back<T>(&mut v, copy(x));
+        vec_push_back<T>(&mut v, copy(x));
+        vec_swap<T>(&mut v, 0, 1);
+        _ = vec_imm_borrow<T>(&v, 0);
+        _ = vec_mut_borrow<T>(&mut v, 0);
+        _ = vec_pop_back<T>(&mut v);
+        _ = vec_pop_back<T>(&mut v);
+        vector<T; 0>() = move(v);
+        return;
+    }
+}
+
+//# run 0x42::Tests::test --type-args u64 --args 0
+
+//# run 0x42::Tests::test --type-args vector<u8> --args b"hello"

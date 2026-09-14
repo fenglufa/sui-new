@@ -1,0 +1,8 @@
+//# print-bytecode
+// Module names cannot be used as types.
+mvir 0x1d20::M {
+    fun f(m: Self::M) {
+    label b0:
+        return;
+    }
+}

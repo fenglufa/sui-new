@@ -1,0 +1,28 @@
+//# publish
+mvir 0x1::Coin {
+    public struct Coin { value: u64 }
+    public fun value(c: &Self::Coin): u64 {
+    label b0:
+        return *&move(c).Coin::value;
+    }
+    public fun zero(): Self::Coin {
+    label b0:
+        return Coin { value: 0 };
+    }
+    public fun destroy_zero(c: Self::Coin) {
+    label b0:
+        Coin {} = move(c);
+        assert(() == 0, 42);
+        return;
+    }
+}
+
+//# run --type-args u64 u8 0x1::Coin::Coin
+mvir 0x42::m {
+
+entry fun foo<T1, T2: copy + drop, T3: key>() {
+label b0:
+    return;
+}
+
+}

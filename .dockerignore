@@ -1,0 +1,10 @@
+*~
+*.swp
+**/.terraform/
+target/
+**/*Dockerfile
+*.md
+build/
+storage/
+docker/
+!docker/stress/entrypoint.sh

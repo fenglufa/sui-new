@@ -1,0 +1,16 @@
+//# publish
+mvir 0x6::M {
+    public struct S<T> { b: bool }
+
+    fun f<T>() {
+    label b0:
+        Self::g<Self::S<T>>();
+        return;
+    }
+
+    fun g<T>() {
+    label b0:
+        Self::f<u64>();
+        return;
+    }
+}

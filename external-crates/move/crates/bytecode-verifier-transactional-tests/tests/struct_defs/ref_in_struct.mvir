@@ -1,0 +1,19 @@
+//# publish
+mvir 0x42::M1 {
+    public struct S { x: &u64 }
+}
+
+//# publish
+mvir 0x42::M2 {
+    public struct S { x: &mut u64 }
+}
+
+//# publish
+mvir 0x42::M3 {
+    public struct S<T> { t: &T }
+}
+
+//# publish
+mvir 0x42::M4 {
+    public struct S<T> { t: &mut T }
+}

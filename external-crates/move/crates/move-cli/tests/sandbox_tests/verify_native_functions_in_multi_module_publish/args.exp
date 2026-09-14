@@ -1,0 +1,2 @@
+Command `sandbox publish `:
+Error: VMError with status MISSING_DEPENDENCY at location Module ModuleId { address: 0000000000000000000000000000000000000000000000000000000000000042, name: Identifier("M") } at index 0 for function handle

@@ -1,0 +1,20 @@
+//# publish
+mvir 0x1::M {
+    public struct Coin { value: u64 }
+    fun zero(): Self::Coin {
+    label b0:
+        return Coin { value: 0 };
+    }
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+
+entry fun foo() {
+    let z: M::Coin;
+label b0:
+    z = M::zero();
+    abort 0; // valid that z is unused
+}
+}

@@ -1,0 +1,39 @@
+//# run
+mvir 0x5::m {
+
+entry fun foo() {
+    let v: vector<u64>;
+label b0:
+    v = vector<u64; 0>();
+    assert(vec_len<u64>(&v) == 0, 0);
+
+    return;
+}
+
+}
+//# run
+mvir 0x6::m {
+
+entry fun foo() {
+    let v: vector<u64>;
+label b0:
+    v = vector<u64; 1>(42);
+    assert(vec_len<u64>(&v) == 1, 1);
+
+    return;
+}
+
+}
+//# run
+mvir 0x7::m {
+
+entry fun foo() {
+    let v: vector<u64>;
+label b0:
+    v = vector<u64; 2>(42, 43);
+    assert(vec_len<u64>(&v) == 2, 2);
+
+    return;
+}
+
+}

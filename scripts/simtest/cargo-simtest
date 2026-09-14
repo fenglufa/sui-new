@@ -1,0 +1,110 @@
+#!/bin/bash
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+die() {
+  echo "$0: $*" >&2
+  exit 1
+}
+
+if [[ "$1" != "simtest" ]]; then
+  die "expected to be invoked via \`cargo simtest\`"
+fi
+
+# consume simtest arg
+shift
+
+# cargo does not export $CARGO_MANIFEST_DIR to subcommands so we have to find it
+# ourselves.
+STARTING_DIR=$(pwd)
+MANIFEST_DIR="$STARTING_DIR"
+until grep -q '^\[workspace\]$' Cargo.toml 2> /dev/null; do
+  cd ..
+  MANIFEST_DIR=$(pwd)
+done
+
+# cd "$MANIFEST_DIR"
+# if ! git diff --quiet Cargo.lock; then
+#   echo "Please commit or revert your changes to Cargo.lock before running cargo simtest"
+#   exit 1
+# fi
+cd "$STARTING_DIR" || die "failed to cd to '$STARTING_DIR'"
+
+cleanup () (
+  cd "$MANIFEST_DIR" || die "failed to cd to '$MANIFEST_DIR'"
+  git checkout -- Cargo.lock > /dev/null
+)
+
+trap cleanup EXIT
+
+if [[ -z "$MSIM_WATCHDOG_TIMEOUT_MS" ]]; then
+  export MSIM_WATCHDOG_TIMEOUT_MS=60000
+fi
+
+if [[ -z "$MSIM_TEST_SEED" ]]; then
+  export MSIM_TEST_SEED=1
+else
+  echo "Using MSIM_TEST_SEED=$MSIM_TEST_SEED from the environment"
+fi
+
+msim_rustflags='--cfg msim'
+
+if [[ -n "$LOCAL_MSIM_PATH" ]]; then
+  cargo_patch_args=(
+    --config "patch.crates-io.tokio.path = \"$LOCAL_MSIM_PATH/msim-tokio\""
+    --config "patch.'https://github.com/MystenLabs/mysten-sim'.msim.path = \"$LOCAL_MSIM_PATH/msim\""
+    --config "patch.crates-io.futures-timer.path = \"$LOCAL_MSIM_PATH/mocked-crates/futures-timer\""
+  )
+else
+  cargo_patch_args=(
+    --config 'patch.crates-io.tokio.git = "https://github.com/MystenLabs/mysten-sim.git"'
+    --config 'patch.crates-io.tokio.rev =  "6b8e1e8cdce408e73d46538773fc85a56c082db7"'
+    --config 'patch.crates-io.futures-timer.git = "https://github.com/MystenLabs/mysten-sim.git"'
+    --config 'patch.crates-io.futures-timer.rev =  "6b8e1e8cdce408e73d46538773fc85a56c082db7"'
+  )
+fi
+
+# Mock out the blst crate to massively speed up the simulation.
+# You should not assume that test runs will be repeatable with and without blst mocking,
+# as blst samples from the PRNG when not mocked.
+if [[ -n "$USE_MOCK_CRYPTO" ]]; then
+  echo "Using mocked crypto crates - no cryptographic verification will occur"
+  msim_rustflags="$msim_rustflags --cfg use_mock_crypto"
+  cargo_patch_args+=(
+    --config 'patch.crates-io.blst.git = "https://github.com/MystenLabs/mock-blst.git"'
+    --config 'patch.crates-io.blst.rev = "630ca4d55de8e199e62c5b6a695c702d95fe6498"'
+  )
+fi
+
+if ! cargo nextest --help > /dev/null 2>&1; then
+  echo "nextest (https://nexte.st) does not appear to be installed. Please install before proceeding."
+  echo "You can install it by running:"
+  echo ""
+  echo "   \$ cargo install cargo-nextest --locked"
+  echo ""
+  echo "or see https://nexte.st for other installation options"
+  exit 1
+fi
+
+cargo_command=( nextest run --cargo-profile simulator )
+if [[ "$1" = "build" ]]; then
+  shift
+  cargo_command=( build --profile simulator )
+fi
+
+# Must supply a new temp dir - the test is deterministic and can't choose one randomly itself.
+TMPDIR="$(mktemp -d)"
+export TMPDIR
+
+# Apply msim cfg flags via RUSTFLAGS env var rather than `--config build.rustflags`.
+# Cargo's RUSTFLAGS env var has *higher* priority than `--config build.rustflags`,
+# so when CI has already exported RUSTFLAGS (e.g. via .github/actions/setup-sccache
+# which exports -C link-arg=-fuse-ld=mold + baseline flags), a `--config` would be
+# silently ignored and `--cfg msim` wouldn't reach rustc. Appending to the existing
+# RUSTFLAGS env ensures both CI-supplied flags and the msim cfg end up on the
+# rustc command line together.
+export RUSTFLAGS="${RUSTFLAGS:-} $msim_rustflags"
+
+cargo "${cargo_command[@]}" \
+  "${cargo_patch_args[@]}" \
+  "$@"

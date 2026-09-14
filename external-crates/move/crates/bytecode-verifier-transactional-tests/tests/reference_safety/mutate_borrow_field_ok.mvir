@@ -1,0 +1,38 @@
+//# publish
+mvir 0x42::Test {
+    public struct T has drop {v: u64}
+
+    public fun new(g: u64): Self::T {
+    label b0:
+        return T{v: move(g)};
+    }
+
+    public fun thousand(t : &mut Self::T) {
+    label b0:
+        *(&mut move(t).T::v) = 1000;
+        return;
+    }
+
+    public fun value(this: &mut Self::T): u64 {
+        let y: &u64;
+    label b0:
+        y = &move(this).T::v;
+        return *move(y);
+    }
+}
+
+//# run
+mvir 0x43::m {
+import 0x42::Test;
+
+entry fun foo() {
+    let x: Test::T;
+    let x_ref: u64;
+label b0:
+    x = Test::new(500);
+    Test::thousand(&mut x);
+    x_ref = Test::value(&mut x); // can read references through calls
+    assert(move(x_ref) == 1000, 42);
+    return;
+}
+}

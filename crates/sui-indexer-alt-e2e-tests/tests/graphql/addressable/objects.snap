@@ -1,0 +1,478 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 16 tasks
+
+init:
+A: object(0,0), B: object(0,1)
+
+task 1, lines 17-19:
+//# programmable --sender A --inputs 1000 @A
+//> 0: SplitCoins(Gas, [Input(0)]);
+//> 1: TransferObjects([Result(0)], Input(1))
+created: object(1,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 2, lines 21-23:
+//# programmable --sender A --inputs 500 @A
+//> 0: SplitCoins(Gas, [Input(0)]);
+//> 1: TransferObjects([Result(0)], Input(1))
+created: object(2,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 3, lines 25-27:
+//# programmable --sender A --inputs 250 @A
+//> 0: SplitCoins(Gas, [Input(0)]);
+//> 1: TransferObjects([Result(0)], Input(1))
+created: object(3,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 4, lines 29-31:
+//# programmable --sender A --inputs @A
+//> 0: sui::bag::new();
+//> 1: TransferObjects([Result(0)], Input(0))
+created: object(4,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2287600,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 5, lines 33-35:
+//# programmable --sender A --inputs @A
+//> 0: sui::table::new<u64, u64>();
+//> 1: TransferObjects([Result(0)], Input(0))
+created: object(5,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2333200,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 6, line 37:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 7, lines 39-40:
+//# programmable --sender A --inputs object(1,0) @B
+//> TransferObjects([Input(0)], Input(1))
+mutated: object(0,0), object(1,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 1956240, non_refundable_storage_fee: 19760
+
+task 8, lines 42-44:
+//# create-checkpoint
+Checkpoint created: 2
+
+task 9, lines 45-47:
+//# programmable --sender A --inputs 100 @A
+//> 0: SplitCoins(Gas, [Input(0)]);
+//> 1: TransferObjects([Result(0)], Input(1))
+created: object(9,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 10, lines 49-53:
+//# programmable --sender A --inputs 200 @A
+//> 0: SplitCoins(Gas, [Input(0)]);
+//> 1: TransferObjects([Result(0)], Input(1))
+// Create another bag for A
+created: object(10,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 11, lines 54-58:
+//# programmable --sender A --inputs @A
+//> 0: sui::bag::new();
+//> 1: TransferObjects([Result(0)], Input(0))
+// Create another table for A
+created: object(11,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2287600,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 12, lines 59-61:
+//# programmable --sender A --inputs @A
+//> 0: sui::table::new<address, address>();
+//> 1: TransferObjects([Result(0)], Input(0))
+created: object(12,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 2333200,  storage_rebate: 978120, non_refundable_storage_fee: 9880
+
+task 13, line 63:
+//# create-checkpoint
+Checkpoint created: 3
+
+task 14, lines 65-150:
+//# run-graphql
+Response: {
+  "data": {
+    "all": {
+      "objects": {
+        "pageInfo": {
+          "hasNextPage": false
+        },
+        "nodes": [
+          {
+            "address": "0xc6a7cbb9faf756a88f9f9ac8b6d66e7bf74b48553265deba13db8645948f8961",
+            "version": 10,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::bag::Bag"
+              },
+              "json": {
+                "id": "0xc6a7cbb9faf756a88f9f9ac8b6d66e7bf74b48553265deba13db8645948f8961",
+                "size": "0"
+              }
+            }
+          },
+          {
+            "address": "0xf0c26ee34289599d20b6b63f8a9351a1499f445926550477942106ef19f35b54",
+            "version": 5,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::bag::Bag"
+              },
+              "json": {
+                "id": "0xf0c26ee34289599d20b6b63f8a9351a1499f445926550477942106ef19f35b54",
+                "size": "0"
+              }
+            }
+          },
+          {
+            "address": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+            "version": 11,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+                "balance": "299999978681550"
+              }
+            }
+          },
+          {
+            "address": "0xfd9621cf3387e9398e7955003bb0a8616e524238c07743d9544c4cfc610cfd7c",
+            "version": 3,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xfd9621cf3387e9398e7955003bb0a8616e524238c07743d9544c4cfc610cfd7c",
+                "balance": "500"
+              }
+            }
+          },
+          {
+            "address": "0x04cf977a5ac7c61ef787c3f03df1f150be2c68e9c8bf959e3a6cdffa5341f5ca",
+            "version": 4,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0x04cf977a5ac7c61ef787c3f03df1f150be2c68e9c8bf959e3a6cdffa5341f5ca",
+                "balance": "250"
+              }
+            }
+          },
+          {
+            "address": "0xcce3d0396184ff8133d291d47cfeca9bec4023e754581d42b483db1ec1691efd",
+            "version": 9,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xcce3d0396184ff8133d291d47cfeca9bec4023e754581d42b483db1ec1691efd",
+                "balance": "200"
+              }
+            }
+          },
+          {
+            "address": "0xcb99ea5d79e561c29f14f22687d5aa5fe315c6f576be29803231f9669fd89e58",
+            "version": 8,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xcb99ea5d79e561c29f14f22687d5aa5fe315c6f576be29803231f9669fd89e58",
+                "balance": "100"
+              }
+            }
+          },
+          {
+            "address": "0xba0bfb880b4efd31dcd141c0c0334476ffa7212769b9e5d4fcdcd00f62ce0feb",
+            "version": 6,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::table::Table<u64,u64>"
+              },
+              "json": {
+                "id": "0xba0bfb880b4efd31dcd141c0c0334476ffa7212769b9e5d4fcdcd00f62ce0feb",
+                "size": "0"
+              }
+            }
+          },
+          {
+            "address": "0xe0f3c2be511834ba1767a16587910f47b1ee287674c8b549f5695e0393417440",
+            "version": 11,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::table::Table<address,address>"
+              },
+              "json": {
+                "id": "0xe0f3c2be511834ba1767a16587910f47b1ee287674c8b549f5695e0393417440",
+                "size": "0"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "bags": {
+      "objects": {
+        "pageInfo": {
+          "hasNextPage": false
+        },
+        "nodes": [
+          {
+            "address": "0xc6a7cbb9faf756a88f9f9ac8b6d66e7bf74b48553265deba13db8645948f8961",
+            "version": 10,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::bag::Bag"
+              },
+              "json": {
+                "id": "0xc6a7cbb9faf756a88f9f9ac8b6d66e7bf74b48553265deba13db8645948f8961",
+                "size": "0"
+              }
+            }
+          },
+          {
+            "address": "0xf0c26ee34289599d20b6b63f8a9351a1499f445926550477942106ef19f35b54",
+            "version": 5,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::bag::Bag"
+              },
+              "json": {
+                "id": "0xf0c26ee34289599d20b6b63f8a9351a1499f445926550477942106ef19f35b54",
+                "size": "0"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "coins": {
+      "objects": {
+        "pageInfo": {
+          "hasNextPage": false
+        },
+        "nodes": [
+          {
+            "address": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+            "version": 11,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+                "balance": "299999978681550"
+              }
+            }
+          },
+          {
+            "address": "0xfd9621cf3387e9398e7955003bb0a8616e524238c07743d9544c4cfc610cfd7c",
+            "version": 3,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xfd9621cf3387e9398e7955003bb0a8616e524238c07743d9544c4cfc610cfd7c",
+                "balance": "500"
+              }
+            }
+          },
+          {
+            "address": "0x04cf977a5ac7c61ef787c3f03df1f150be2c68e9c8bf959e3a6cdffa5341f5ca",
+            "version": 4,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0x04cf977a5ac7c61ef787c3f03df1f150be2c68e9c8bf959e3a6cdffa5341f5ca",
+                "balance": "250"
+              }
+            }
+          },
+          {
+            "address": "0xcce3d0396184ff8133d291d47cfeca9bec4023e754581d42b483db1ec1691efd",
+            "version": 9,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xcce3d0396184ff8133d291d47cfeca9bec4023e754581d42b483db1ec1691efd",
+                "balance": "200"
+              }
+            }
+          },
+          {
+            "address": "0xcb99ea5d79e561c29f14f22687d5aa5fe315c6f576be29803231f9669fd89e58",
+            "version": 8,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+              },
+              "json": {
+                "id": "0xcb99ea5d79e561c29f14f22687d5aa5fe315c6f576be29803231f9669fd89e58",
+                "balance": "100"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "tableU64U64": {
+      "objects": {
+        "pageInfo": {
+          "hasNextPage": false
+        },
+        "nodes": [
+          {
+            "address": "0xba0bfb880b4efd31dcd141c0c0334476ffa7212769b9e5d4fcdcd00f62ce0feb",
+            "version": 6,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::table::Table<u64,u64>"
+              },
+              "json": {
+                "id": "0xba0bfb880b4efd31dcd141c0c0334476ffa7212769b9e5d4fcdcd00f62ce0feb",
+                "size": "0"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "tableAddressAddress": {
+      "objects": {
+        "pageInfo": {
+          "hasNextPage": false
+        },
+        "nodes": [
+          {
+            "address": "0xe0f3c2be511834ba1767a16587910f47b1ee287674c8b549f5695e0393417440",
+            "version": 11,
+            "contents": {
+              "type": {
+                "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::table::Table<address,address>"
+              },
+              "json": {
+                "id": "0xe0f3c2be511834ba1767a16587910f47b1ee287674c8b549f5695e0393417440",
+                "size": "0"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "doesntExist": {
+      "objects": {
+        "pageInfo": {
+          "hasNextPage": false
+        },
+        "nodes": []
+      }
+    }
+  }
+}
+
+task 15, lines 152-171:
+//# run-graphql
+Response: {
+  "data": {
+    "timeTravel": {
+      "query": {
+        "address": {
+          "objects": {
+            "pageInfo": {
+              "hasNextPage": false
+            },
+            "nodes": [
+              {
+                "address": "0xf0c26ee34289599d20b6b63f8a9351a1499f445926550477942106ef19f35b54",
+                "version": 5,
+                "contents": {
+                  "type": {
+                    "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::bag::Bag"
+                  },
+                  "json": {
+                    "id": "0xf0c26ee34289599d20b6b63f8a9351a1499f445926550477942106ef19f35b54",
+                    "size": "0"
+                  }
+                }
+              },
+              {
+                "address": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+                "version": 7,
+                "contents": {
+                  "type": {
+                    "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+                  },
+                  "json": {
+                    "id": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+                    "balance": "299999987342170"
+                  }
+                }
+              },
+              {
+                "address": "0xfd9621cf3387e9398e7955003bb0a8616e524238c07743d9544c4cfc610cfd7c",
+                "version": 3,
+                "contents": {
+                  "type": {
+                    "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+                  },
+                  "json": {
+                    "id": "0xfd9621cf3387e9398e7955003bb0a8616e524238c07743d9544c4cfc610cfd7c",
+                    "balance": "500"
+                  }
+                }
+              },
+              {
+                "address": "0x04cf977a5ac7c61ef787c3f03df1f150be2c68e9c8bf959e3a6cdffa5341f5ca",
+                "version": 4,
+                "contents": {
+                  "type": {
+                    "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+                  },
+                  "json": {
+                    "id": "0x04cf977a5ac7c61ef787c3f03df1f150be2c68e9c8bf959e3a6cdffa5341f5ca",
+                    "balance": "250"
+                  }
+                }
+              },
+              {
+                "address": "0xba0bfb880b4efd31dcd141c0c0334476ffa7212769b9e5d4fcdcd00f62ce0feb",
+                "version": 6,
+                "contents": {
+                  "type": {
+                    "repr": "0x0000000000000000000000000000000000000000000000000000000000000002::table::Table<u64,u64>"
+                  },
+                  "json": {
+                    "id": "0xba0bfb880b4efd31dcd141c0c0334476ffa7212769b9e5d4fcdcd00f62ce0feb",
+                    "size": "0"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

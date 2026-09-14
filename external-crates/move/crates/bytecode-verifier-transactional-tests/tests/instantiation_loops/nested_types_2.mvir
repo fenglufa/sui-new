@@ -1,0 +1,13 @@
+//# publish
+
+mvir 0x6::M {
+    public struct S<T> { b: bool }
+    public struct R<T1, T2> { b: bool }
+
+    fun foo<T>() {
+    label b0:
+        // instantiation loop
+        Self::foo<Self::R<u64, Self::S<Self::S<T>>>>();
+        return;
+    }
+}

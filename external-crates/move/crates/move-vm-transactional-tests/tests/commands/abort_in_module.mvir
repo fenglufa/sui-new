@@ -1,0 +1,20 @@
+//# publish
+mvir 0x5::M {
+    public fun foo() {
+    label b0:
+        abort 22;
+    }
+
+}
+
+//# run
+mvir 0x42::m {
+import 0x5::M;
+
+entry fun foo() {
+label b0:
+    // should abort and point to the module
+    M::foo();
+    return;
+}
+}

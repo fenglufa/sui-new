@@ -1,0 +1,51 @@
+// Tests completions of various code snippets
+{
+  "AutoImport": {
+    "project": "tests/import",
+    "file_tests": {
+      "colon_colon.move": [
+        {
+          "use_line": 7,
+          "use_col": 9
+        },
+        {
+          "use_line": 11,
+          "use_col": 13
+        },
+        {
+          "use_line": 15,
+          "use_col": 21
+        },
+        {
+          "use_line": 19,
+          "use_col": 22
+        }
+      ],
+      "dep.move": [
+        {
+          "use_line": 22,
+          "use_col": 9
+        }
+      ],
+      "import.move": [
+        // import for same pkg/module name
+        {
+          "use_line": 10,
+          "use_col": 23
+        }
+      ],
+      "function_import_convention.move": [
+        // functions are imported through their module and inserted as module-qualified calls
+        {
+          "use_line": 5,
+          "use_col": 9
+        },
+        // types are imported directly and inserted unqualified
+        {
+          "use_line": 10,
+          "use_col": 17
+        }
+      ]
+    }
+  }
+}

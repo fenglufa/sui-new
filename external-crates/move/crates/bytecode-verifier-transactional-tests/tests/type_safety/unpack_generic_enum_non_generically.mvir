@@ -1,0 +1,116 @@
+//# publish
+mvir 0x2::ByValue {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        Foo::V { x }  = move(y);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::ByImmRef {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        &Foo::V { x } = move(y);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::ByMutRef {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        &mut Foo::V { x } = move(y);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::ByValue {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: &Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        Foo::V { x }  = move(y);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::ByImmRef {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: &Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        &Foo::V { x } = move(y);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::ByMutRef {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: &Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        &mut Foo::V { x } = move(y);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::ByValue {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: &mut Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        Foo::V { x }  = move(y);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::ByImmRef {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: &mut Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        &Foo::V { x } = move(y);
+        return;
+    }
+}
+
+//# publish
+mvir 0x2::ByMutRef {
+    public enum Foo<T> { V { x: T } }
+
+    fun foo(y: &mut Self::Foo<u64>) {
+        let x: u64;
+    label b0:
+        // invalid
+        &mut Foo::V { x } = move(y);
+        return;
+    }
+}

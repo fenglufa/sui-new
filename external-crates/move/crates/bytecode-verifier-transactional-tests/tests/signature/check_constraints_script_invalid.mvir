@@ -1,0 +1,87 @@
+//# publish
+mvir 0x1::M {
+    public struct BoxCopy<T> has copy { f: T }
+    public struct BoxDrop<T> has drop { f: T }
+    public struct BoxStore<T> has store { f: T }
+    public struct BoxKey<T> has key { f: T }
+
+    public struct NeedsCopy<T: copy> { dummy: bool }
+    public struct NeedsDrop<T: drop> { dummy: bool }
+    public struct NeedsStore<T: store> { dummy: bool }
+    public struct NeedsKey<T: key> { dummy: bool }
+}
+
+// tests various invalid constraints in script arguments
+// all tests should give a constraint violation, even without type arguments passed in to 'run'
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+entry fun foo<T: drop>(x: M::NeedsCopy<T>) {
+    label l0:
+    abort 0;
+}
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+entry fun foo<T: copy + store>(x: M::NeedsDrop<T>) {
+    label l0:
+    abort 0;
+}
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+entry fun foo<T: key>(x: M::NeedsStore<T>) {
+    label l0:
+    abort 0;
+}
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+entry fun foo<T>(x: M::NeedsKey<T>) {
+    label l0:
+    abort 0;
+}
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+entry fun foo<T: store>(x: M::NeedsCopy<M::BoxCopy<T>>) {
+    label l0:
+    abort 0;
+}
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+entry fun foo<T: key + store>(x: M::NeedsDrop<M::BoxDrop<T>>) {
+    label l0:
+    abort 0;
+}
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+entry fun foo<T>(x: M::NeedsStore<M::BoxStore<T>>) {
+    label l0:
+    abort 0;
+}
+}
+
+//# run
+mvir 0x42::m {
+import 0x1::M;
+entry fun foo<T: drop>(x: M::NeedsKey<M::BoxKey<T>>) {
+    label l0:
+    abort 0;
+}
+}

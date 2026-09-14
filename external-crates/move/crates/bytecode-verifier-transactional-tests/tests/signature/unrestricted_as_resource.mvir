@@ -1,0 +1,11 @@
+//# publish
+mvir 0x1::M {
+    public struct S<T: key> { b: bool }
+
+    fun foo() {
+        // bool does not have key
+        let x: Self::S<bool>;
+    label b0:
+        return;
+    }
+}

@@ -1,0 +1,18 @@
+//# publish
+mvir 0x42::M {
+    public(friend) fun foo() {
+    label b0:
+        return;
+    }
+}
+
+//# publish
+mvir 0x43::N {
+    import 0x42::M;
+    fun foo() {
+    label b0:
+        // cannot call friend visible function if not a friend
+        M::foo();
+        return;
+    }
+}

@@ -1,0 +1,56 @@
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+    let v: vector<bool>;
+label b0:
+    (1);                // 0
+    _ = vector<bool; 1>(); // 1
+    v = ();             // 2
+    return;             // 3
+}
+
+}
+
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+    let v: vector<bool>;
+label b0:
+    (0);                // 0
+    (false);            // 1
+    _ = vector<bool; 2>(); // 2
+    v = ();             // 3
+    return;             // 4
+    return;
+}
+
+}
+
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+    let v: vector<u8>;
+label b0:
+    (1u8, false, 2u8);
+    v = vector<u8; 3>();
+    return;
+}
+
+}
+
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+    let v: vector<bool>;
+label b0:
+    (false, 0, 0, 0);
+    v = vector<bool; 3>();
+    _ = ();
+    return;
+}
+
+}

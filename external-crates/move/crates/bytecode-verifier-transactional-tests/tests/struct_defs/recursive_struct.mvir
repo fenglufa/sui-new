@@ -1,0 +1,58 @@
+//# publish
+mvir 0x1::Cup {
+    public struct Cup<T> { f: T }
+    public fun cup<T>(f: T): Self::Cup<T> {
+    label b0:
+        return Cup<T> { f: move(f) };
+    }
+}
+
+//# publish
+mvir 0x1::M0 {
+    // recursive struct
+    public struct Foo { f: Self::Foo }
+}
+
+//# publish
+mvir 0x1::M1 {
+    import 0x1::Cup;
+    // recursive struct
+    public struct Foo { f: Cup::Cup<Self::Foo> }
+
+    // would blow up the stack
+    public fun foo(): Self::Foo {
+    label b0:
+        return Foo { f: Cup::cup<Self::Foo>(Self::foo()) };
+    }
+
+}
+
+//# publish
+mvir 0x1::M2 {
+    import 0x1::signer;
+
+    public struct X { y: vector<Self::Y> }
+    public struct Y { x: vector<Self::X> }
+
+}
+
+//# publish
+mvir 0x1::M3 {
+    import 0x1::Cup;
+
+    // recursive struct
+    public struct Foo { f: Cup::Cup<Self::Foo> }
+
+}
+
+//# publish
+mvir 0x1::M3 {
+    import 0x1::Cup;
+
+    // indirect recursive struct
+    public struct A { b: Self::B }
+    public struct B { c: Self::C }
+    public struct C { d: vector<Self::D> }
+    public struct D { x: Cup::Cup<Cup::Cup<Cup::Cup<Self::A>>> }
+
+}

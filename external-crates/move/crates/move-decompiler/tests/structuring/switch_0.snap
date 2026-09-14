@@ -1,0 +1,15 @@
+---
+source: crates/move-decompiler/tests/tests.rs
+assertion_line: 21
+---
+switch (0) {
+    _0 => 
+        { 1 }
+    _1 => 
+        { 2 }
+    _2 => 
+        { 3 }
+    _3 => 
+        { 4 }
+}
+{ 5 }

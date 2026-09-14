@@ -1,0 +1,190 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 6 tasks
+
+init:
+A: object(0,0), B: object(0,1)
+
+task 1, lines 6-8:
+//# programmable --sender A --inputs 1000 @B
+//> 0: SplitCoins(Gas, [Input(0)]);
+//> 1: TransferObjects([Result(0)], Input(1))
+created: object(1,0)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 2, line 10:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 3, lines 12-17:
+//# run-graphql
+Response: {
+  "data": {
+    "transactionEffects": {
+      "effectsJson": {
+        "digest": "9EFn3X229C8hhL6Aet61aAqherndQG2buJXPpHDEmyAm",
+        "version": 2,
+        "status": {
+          "success": true
+        },
+        "epoch": "0",
+        "gasUsed": {
+          "computationCost": "1000000",
+          "storageCost": "1976000",
+          "storageRebate": "0",
+          "nonRefundableStorageFee": "0"
+        },
+        "transactionDigest": "FKqhR5h5uQemq2dDWJ9358i3jsF1aZXtXC8gVVZiik3p",
+        "gasObject": {
+          "objectId": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+          "inputState": "INPUT_OBJECT_STATE_EXISTS",
+          "inputVersion": "1",
+          "inputDigest": "Bzr4WpBBP9U9NhnHLWMKujjzcRczyxdxswVrvKK3RoL4",
+          "inputOwner": {
+            "kind": "ADDRESS",
+            "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+          },
+          "outputState": "OUTPUT_OBJECT_STATE_OBJECT_WRITE",
+          "outputVersion": "2",
+          "outputDigest": "FULbvFu1oiEmSEK8tDBoHhjrchpY73TK2gk7g1TcbDdg",
+          "outputOwner": {
+            "kind": "ADDRESS",
+            "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+          },
+          "idOperation": "NONE"
+        },
+        "dependencies": [
+          "GKpM9uNhR96ZtkZk6QRLW8teqPb5JYcE5icGcJVBMNtV"
+        ],
+        "lamportVersion": "2",
+        "changedObjects": [
+          {
+            "objectId": "0x6ac0b6e729a14fe16883300ec3ebeb7f70eceaf796d5f3a394cd1d383fdebd08",
+            "inputState": "INPUT_OBJECT_STATE_DOES_NOT_EXIST",
+            "outputState": "OUTPUT_OBJECT_STATE_OBJECT_WRITE",
+            "outputVersion": "2",
+            "outputDigest": "EPKxkRtQjp2UMsQw1mkQRf825E64KXmg3h7Prt3D2hvA",
+            "outputOwner": {
+              "kind": "ADDRESS",
+              "address": "0xa7b032703878aa74c3126935789fd1d4d7e111d5911b09247d6963061c312b5a"
+            },
+            "idOperation": "CREATED",
+            "objectType": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+          },
+          {
+            "objectId": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+            "inputState": "INPUT_OBJECT_STATE_EXISTS",
+            "inputVersion": "1",
+            "inputDigest": "Bzr4WpBBP9U9NhnHLWMKujjzcRczyxdxswVrvKK3RoL4",
+            "inputOwner": {
+              "kind": "ADDRESS",
+              "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+            },
+            "outputState": "OUTPUT_OBJECT_STATE_OBJECT_WRITE",
+            "outputVersion": "2",
+            "outputDigest": "FULbvFu1oiEmSEK8tDBoHhjrchpY73TK2gk7g1TcbDdg",
+            "outputOwner": {
+              "kind": "ADDRESS",
+              "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+            },
+            "idOperation": "NONE",
+            "objectType": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+          }
+        ]
+      }
+    }
+  }
+}
+
+task 4, lines 19-27:
+//# run-graphql
+Response: {
+  "data": {
+    "transaction": {
+      "digest": "FKqhR5h5uQemq2dDWJ9358i3jsF1aZXtXC8gVVZiik3p",
+      "effects": {
+        "effectsJson": {
+          "digest": "9EFn3X229C8hhL6Aet61aAqherndQG2buJXPpHDEmyAm",
+          "version": 2,
+          "status": {
+            "success": true
+          },
+          "epoch": "0",
+          "gasUsed": {
+            "computationCost": "1000000",
+            "storageCost": "1976000",
+            "storageRebate": "0",
+            "nonRefundableStorageFee": "0"
+          },
+          "transactionDigest": "FKqhR5h5uQemq2dDWJ9358i3jsF1aZXtXC8gVVZiik3p",
+          "gasObject": {
+            "objectId": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+            "inputState": "INPUT_OBJECT_STATE_EXISTS",
+            "inputVersion": "1",
+            "inputDigest": "Bzr4WpBBP9U9NhnHLWMKujjzcRczyxdxswVrvKK3RoL4",
+            "inputOwner": {
+              "kind": "ADDRESS",
+              "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+            },
+            "outputState": "OUTPUT_OBJECT_STATE_OBJECT_WRITE",
+            "outputVersion": "2",
+            "outputDigest": "FULbvFu1oiEmSEK8tDBoHhjrchpY73TK2gk7g1TcbDdg",
+            "outputOwner": {
+              "kind": "ADDRESS",
+              "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+            },
+            "idOperation": "NONE"
+          },
+          "dependencies": [
+            "GKpM9uNhR96ZtkZk6QRLW8teqPb5JYcE5icGcJVBMNtV"
+          ],
+          "lamportVersion": "2",
+          "changedObjects": [
+            {
+              "objectId": "0x6ac0b6e729a14fe16883300ec3ebeb7f70eceaf796d5f3a394cd1d383fdebd08",
+              "inputState": "INPUT_OBJECT_STATE_DOES_NOT_EXIST",
+              "outputState": "OUTPUT_OBJECT_STATE_OBJECT_WRITE",
+              "outputVersion": "2",
+              "outputDigest": "EPKxkRtQjp2UMsQw1mkQRf825E64KXmg3h7Prt3D2hvA",
+              "outputOwner": {
+                "kind": "ADDRESS",
+                "address": "0xa7b032703878aa74c3126935789fd1d4d7e111d5911b09247d6963061c312b5a"
+              },
+              "idOperation": "CREATED",
+              "objectType": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+            },
+            {
+              "objectId": "0xe115ae7ff9b56944fafef6fd015d510a2fd963b6d42ec8a6266409c0ea40fb36",
+              "inputState": "INPUT_OBJECT_STATE_EXISTS",
+              "inputVersion": "1",
+              "inputDigest": "Bzr4WpBBP9U9NhnHLWMKujjzcRczyxdxswVrvKK3RoL4",
+              "inputOwner": {
+                "kind": "ADDRESS",
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              },
+              "outputState": "OUTPUT_OBJECT_STATE_OBJECT_WRITE",
+              "outputVersion": "2",
+              "outputDigest": "FULbvFu1oiEmSEK8tDBoHhjrchpY73TK2gk7g1TcbDdg",
+              "outputOwner": {
+                "kind": "ADDRESS",
+                "address": "0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e"
+              },
+              "idOperation": "NONE",
+              "objectType": "0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+task 5, lines 29-34:
+//# run-graphql
+Response: {
+  "data": {
+    "transactionEffects": null
+  }
+}

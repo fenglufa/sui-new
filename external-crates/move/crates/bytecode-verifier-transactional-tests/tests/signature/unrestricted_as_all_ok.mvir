@@ -1,0 +1,11 @@
+//# publish
+mvir 0x1::M {
+    public struct S<T> { b: bool }
+
+    fun foo() {
+        // no constraint
+        let x: Self::S<bool>;
+    label b0:
+        return;
+    }
+}

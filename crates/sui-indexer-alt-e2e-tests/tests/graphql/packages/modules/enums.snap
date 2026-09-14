@@ -1,0 +1,539 @@
+---
+source: external-crates/move/crates/move-transactional-test-runner/src/framework.rs
+---
+processed 8 tasks
+
+init:
+A: object(0,0)
+
+task 1, lines 6-33:
+//# run-graphql
+Response: {
+  "data": {
+    "package": null
+  }
+}
+
+task 2, lines 35-41:
+//# publish --upgradeable --sender A
+created: object(2,0), object(2,1)
+mutated: object(0,0)
+gas summary: computation_cost: 1000000, storage_cost: 5487200,  storage_rebate: 0, non_refundable_storage_fee: 0
+
+task 3, lines 43-60:
+//# upgrade --package P0 --upgrade-capability 2,1 --sender A
+created: object(3,0)
+mutated: object(0,0), object(2,1)
+gas summary: computation_cost: 1000000, storage_cost: 6878000,  storage_rebate: 2595780, non_refundable_storage_fee: 26220
+
+task 4, line 62:
+//# create-checkpoint
+Checkpoint created: 1
+
+task 5, lines 64-96:
+//# run-graphql
+Response: {
+  "data": {
+    "packageVersions": {
+      "nodes": [
+        {
+          "version": 1,
+          "module": {
+            "enums": {
+              "nodes": [
+                {
+                  "name": "Status",
+                  "fullyQualifiedName": "0x2976f1370596947f238f7e4e476dc95d1c71198093c14710ef9bc6eb8aa23db9::M::Status",
+                  "abilities": [
+                    "COPY",
+                    "DROP"
+                  ],
+                  "typeParameters": [],
+                  "variants": [
+                    {
+                      "name": "Active",
+                      "fields": []
+                    },
+                    {
+                      "name": "Inactive",
+                      "fields": [
+                        {
+                          "name": "reason",
+                          "type": {
+                            "repr": "vector<u8>",
+                            "signature": {
+                              "body": {
+                                "vector": "u8"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "version": 2,
+          "module": {
+            "enums": {
+              "nodes": [
+                {
+                  "name": "Complex",
+                  "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Complex",
+                  "abilities": [
+                    "STORE"
+                  ],
+                  "typeParameters": [
+                    {
+                      "constraints": [
+                        "STORE"
+                      ],
+                      "isPhantom": false
+                    }
+                  ],
+                  "variants": [
+                    {
+                      "name": "Empty",
+                      "fields": []
+                    },
+                    {
+                      "name": "Single",
+                      "fields": [
+                        {
+                          "name": "pos0",
+                          "type": {
+                            "repr": "$0",
+                            "signature": {
+                              "body": {
+                                "typeParameter": 0
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Pair",
+                      "fields": [
+                        {
+                          "name": "first",
+                          "type": {
+                            "repr": "$0",
+                            "signature": {
+                              "body": {
+                                "typeParameter": 0
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "name": "second",
+                          "type": {
+                            "repr": "$0",
+                            "signature": {
+                              "body": {
+                                "typeParameter": 0
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Result",
+                  "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Result",
+                  "abilities": [
+                    "DROP"
+                  ],
+                  "typeParameters": [
+                    {
+                      "constraints": [
+                        "DROP"
+                      ],
+                      "isPhantom": false
+                    },
+                    {
+                      "constraints": [
+                        "DROP"
+                      ],
+                      "isPhantom": false
+                    }
+                  ],
+                  "variants": [
+                    {
+                      "name": "Ok",
+                      "fields": [
+                        {
+                          "name": "pos0",
+                          "type": {
+                            "repr": "$0",
+                            "signature": {
+                              "body": {
+                                "typeParameter": 0
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Err",
+                      "fields": [
+                        {
+                          "name": "pos0",
+                          "type": {
+                            "repr": "$1",
+                            "signature": {
+                              "body": {
+                                "typeParameter": 1
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Status",
+                  "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Status",
+                  "abilities": [
+                    "COPY",
+                    "DROP"
+                  ],
+                  "typeParameters": [],
+                  "variants": [
+                    {
+                      "name": "Active",
+                      "fields": []
+                    },
+                    {
+                      "name": "Inactive",
+                      "fields": [
+                        {
+                          "name": "reason",
+                          "type": {
+                            "repr": "vector<u8>",
+                            "signature": {
+                              "body": {
+                                "vector": "u8"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+task 6, lines 98-126:
+//# run-graphql --cursors "Complex" "Status"
+Response: {
+  "data": {
+    "package": {
+      "module": {
+        "all": {
+          "pageInfo": {
+            "hasPreviousPage": false,
+            "hasNextPage": false
+          },
+          "nodes": [
+            {
+              "name": "Complex",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Complex"
+            },
+            {
+              "name": "Result",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Result"
+            },
+            {
+              "name": "Status",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Status"
+            }
+          ]
+        },
+        "first": {
+          "pageInfo": {
+            "hasPreviousPage": false,
+            "hasNextPage": true
+          },
+          "nodes": [
+            {
+              "name": "Complex",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Complex"
+            },
+            {
+              "name": "Result",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Result"
+            }
+          ]
+        },
+        "last": {
+          "pageInfo": {
+            "hasPreviousPage": true,
+            "hasNextPage": false
+          },
+          "nodes": [
+            {
+              "name": "Result",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Result"
+            },
+            {
+              "name": "Status",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Status"
+            }
+          ]
+        },
+        "firstBefore": {
+          "pageInfo": {
+            "hasPreviousPage": false,
+            "hasNextPage": true
+          },
+          "nodes": [
+            {
+              "name": "Complex",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Complex"
+            }
+          ]
+        },
+        "lastAfter": {
+          "pageInfo": {
+            "hasPreviousPage": true,
+            "hasNextPage": false
+          },
+          "nodes": [
+            {
+              "name": "Status",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Status"
+            }
+          ]
+        },
+        "firstAfter": {
+          "pageInfo": {
+            "hasPreviousPage": true,
+            "hasNextPage": true
+          },
+          "nodes": [
+            {
+              "name": "Result",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Result"
+            }
+          ]
+        },
+        "lastBefore": {
+          "pageInfo": {
+            "hasPreviousPage": true,
+            "hasNextPage": true
+          },
+          "nodes": [
+            {
+              "name": "Result",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Result"
+            }
+          ]
+        },
+        "afterBefore": {
+          "pageInfo": {
+            "hasPreviousPage": true,
+            "hasNextPage": true
+          },
+          "nodes": [
+            {
+              "name": "Result",
+              "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Result"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+task 7, lines 128-171:
+//# run-graphql
+Response: {
+  "data": {
+    "package": {
+      "module": {
+        "status": {
+          "name": "Status",
+          "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Status",
+          "abilities": [
+            "COPY",
+            "DROP"
+          ],
+          "typeParameters": [],
+          "variants": [
+            {
+              "name": "Active",
+              "fields": []
+            },
+            {
+              "name": "Inactive",
+              "fields": [
+                {
+                  "name": "reason",
+                  "type": {
+                    "repr": "vector<u8>",
+                    "signature": {
+                      "body": {
+                        "vector": "u8"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "result": {
+          "name": "Result",
+          "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Result",
+          "abilities": [
+            "DROP"
+          ],
+          "typeParameters": [
+            {
+              "constraints": [
+                "DROP"
+              ],
+              "isPhantom": false
+            },
+            {
+              "constraints": [
+                "DROP"
+              ],
+              "isPhantom": false
+            }
+          ],
+          "variants": [
+            {
+              "name": "Ok",
+              "fields": [
+                {
+                  "name": "pos0",
+                  "type": {
+                    "repr": "$0",
+                    "signature": {
+                      "body": {
+                        "typeParameter": 0
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Err",
+              "fields": [
+                {
+                  "name": "pos0",
+                  "type": {
+                    "repr": "$1",
+                    "signature": {
+                      "body": {
+                        "typeParameter": 1
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "complex": {
+          "name": "Complex",
+          "fullyQualifiedName": "0x1d362710202b5e6465d066c75260b9fe21ef2d3ca5a5a7114c001086f668d845::M::Complex",
+          "abilities": [
+            "STORE"
+          ],
+          "typeParameters": [
+            {
+              "constraints": [
+                "STORE"
+              ],
+              "isPhantom": false
+            }
+          ],
+          "variants": [
+            {
+              "name": "Empty",
+              "fields": []
+            },
+            {
+              "name": "Single",
+              "fields": [
+                {
+                  "name": "pos0",
+                  "type": {
+                    "repr": "$0",
+                    "signature": {
+                      "body": {
+                        "typeParameter": 0
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Pair",
+              "fields": [
+                {
+                  "name": "first",
+                  "type": {
+                    "repr": "$0",
+                    "signature": {
+                      "body": {
+                        "typeParameter": 0
+                      }
+                    }
+                  }
+                },
+                {
+                  "name": "second",
+                  "type": {
+                    "repr": "$0",
+                    "signature": {
+                      "body": {
+                        "typeParameter": 0
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "statusDatatype": {
+          "name": "Status",
+          "asMoveEnum": {
+            "name": "Status"
+          },
+          "asMoveStruct": null
+        },
+        "resultDatatype": {
+          "name": "Result",
+          "asMoveEnum": {
+            "name": "Result"
+          },
+          "asMoveStruct": null
+        }
+      }
+    }
+  }
+}

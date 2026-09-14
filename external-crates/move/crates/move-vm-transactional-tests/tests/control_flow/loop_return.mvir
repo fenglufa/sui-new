@@ -1,0 +1,11 @@
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+label loop:
+    return;
+    assert(false, 42);
+    jump loop;
+}
+
+}

@@ -1,0 +1,22 @@
+---
+source: crates/sui/tests/shell_tests.rs
+---
+----- script -----
+# Copyright (c) Mysten Labs, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+chain_id=$(sui client --client.config $CONFIG chain-identifier --format=hex)
+echo "[environments]" >> test_pkg/Move.toml
+echo "localnet = \"$chain_id\"" >> test_pkg/Move.toml
+
+# Calling move build (with dump-bytecode-as-base64 flags)
+sui move --client.config "$CONFIG" build -p test_pkg --dump-bytecode-as-base64
+
+----- results -----
+success: true
+exit_code: 0
+----- stdout -----
+{"modules":["oRzrCwcAAAUDAQACBwICCAQgAAABYQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="],"dependencies":[],"digest":[207,151,158,198,145,122,75,15,31,94,253,117,25,114,156,68,190,246,91,212,135,111,74,12,2,50,235,184,21,32,141,163]}
+
+----- stderr -----
+BUILDING test_pkg

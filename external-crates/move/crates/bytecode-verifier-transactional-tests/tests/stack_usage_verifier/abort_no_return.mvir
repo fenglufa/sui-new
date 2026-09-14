@@ -1,0 +1,10 @@
+//# run
+mvir 0x42::m {
+
+entry fun foo() {
+label b0:
+    // no return needed
+    abort 0;
+}
+
+}

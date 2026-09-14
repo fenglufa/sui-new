@@ -1,0 +1,42 @@
+---
+source: crates/move-compiler/tests/move_check_testsuite.rs
+info:
+  flavor: core
+  edition: legacy
+  lint: false
+---
+error[EC07002]: mutable borrow rule violated
+   ┌─ tests/move_check/liveness/dead_refs_branch_both_invalid.move:10:13
+   │
+ 4 │         let x_ref = &mut x;
+   │                     ------ It is still being mutably borrowed by this reference
+   ·
+10 │         _ = x;
+   │             ^ Invalid copy of variable 'x'
+
+error[EC07003]: invalid operation, could create a dangling reference
+   ┌─ tests/move_check/liveness/dead_refs_branch_both_invalid.move:11:13
+   │
+ 4 │         let x_ref = &mut x;
+   │                     ------ It is still being mutably borrowed by this reference
+   ·
+11 │         _ = move x;
+   │             ^^^^^^ Invalid move of variable 'x'
+
+error[EC07002]: mutable borrow rule violated
+   ┌─ tests/move_check/liveness/dead_refs_branch_both_invalid.move:23:13
+   │
+17 │         let x_ref = &mut x;
+   │                     ------ It is still being mutably borrowed by this reference
+   ·
+23 │         _ = x;
+   │             ^ Invalid copy of variable 'x'
+
+error[EC07003]: invalid operation, could create a dangling reference
+   ┌─ tests/move_check/liveness/dead_refs_branch_both_invalid.move:24:13
+   │
+17 │         let x_ref = &mut x;
+   │                     ------ It is still being mutably borrowed by this reference
+   ·
+24 │         _ = move x;
+   │             ^^^^^^ Invalid move of variable 'x'
