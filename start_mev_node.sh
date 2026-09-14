@@ -5,7 +5,7 @@
 #
 #  用法：
 #      ./start_mev_node.sh build     # 1. 先编译
-#      ./start_mev_node.sh check     # 2. 只做启动前自检，不启动
+#      ./start_mev_node.sh check     # 2. 只做启动前自检，不启动（含协议版本预检）
 #      ./start_mev_node.sh start     # 3. 前台启动（Ctrl-C 停止，调试用）
 #      ./start_mev_node.sh daemon    # 3'. 后台启动，日志写 $LOG_FILE
 #      ./start_mev_node.sh verify    # 4. 启动后验证补丁是否真的生效
@@ -126,6 +126,12 @@ SOCKET_TX="${SOCKET_TX:-/tmp/sui_tx.sock}"
 LOG_FILE="${LOG_FILE:-/tmp/sui-node-mev.log}"
 PID_FILE="${PID_FILE:-/tmp/sui-node-mev.pid}"
 
+# 协议版本比对用的 JSON-RPC 端点，默认不联网（置空）。
+# 公共 fullnode 已废弃 JSON-RPC（suix_* 会回 -32601），想要主动比对就指向
+# 一个自己可控的端点，例：PROTOCOL_RPC=http://127.0.0.1:9000（本节点自己的 RPC）。
+PROTOCOL_RPC="${PROTOCOL_RPC:-}"
+PROTOCOL_RPC_TIMEOUT="${PROTOCOL_RPC_TIMEOUT:-8}"
+
 # YAML 里的顶级字段名（kebab-case，不是 snake_case）
 YKEY_CACHE="mev-cache-update-socket"
 YKEY_TX="mev-tx-socket"
@@ -203,7 +209,59 @@ do_build() {
 do_check() {
   local errors=0
 
-  echo "==> 1/5 二进制"
+  echo "==> 1/6 协议版本预检（这一条会直接 core dump，而且跟操作系统无关）"
+  # sui-node 在 AuthorityPerEpochStore::new 里对 protocol version 做硬 assert：
+  # 网络 pv 高于二进制的 MAX_PROTOCOL_VERSION 时，进程 panic abort，报
+  # "Please upgrade the binary"。该上限由基线 tag 决定，非 msim 编译下
+  # MAX_ALLOWED == MAX，没有任何配置项或 CLI flag 能绕过 —— 唯一的解法是把补丁
+  # 重打到更新的 mainnet tag。所以这一项放最前面：它比二进制、YAML 都更早致命。
+  local pv_src="$REPO_ROOT/crates/sui-protocol-config/src/lib.rs"
+  local pv_bin=""
+  if [[ -f "$pv_src" ]]; then
+    pv_bin="$(grep -m1 -oE 'const MAX_PROTOCOL_VERSION: u64 = [0-9]+' "$pv_src" | grep -oE '[0-9]+$' || true)"
+  fi
+  if [[ -z "$pv_bin" ]]; then
+    warn "读不到本仓库的 MAX_PROTOCOL_VERSION（$pv_src 缺失或格式变了）"
+  else
+    ok "本仓库编出的 sui-node 最高支持 protocol version $pv_bin"
+    # 主网当前 pv 不靠猜：优先扫上次启动的日志抓 panic 签名（完全离线、零误报），
+    # 其次才是用户显式指定 PROTOCOL_RPC 时的主动比对。
+    local pv_seen=""
+    if [[ -f "$LOG_FILE" ]]; then
+      pv_seen="$(grep -m1 -oE 'Network protocol version is ProtocolVersion\([0-9]+\)' "$LOG_FILE" 2>/dev/null | grep -oE '[0-9]+' || true)"
+    fi
+    if [[ -n "$pv_seen" && "$pv_seen" -gt "$pv_bin" ]]; then
+      bad "上次启动就死在协议版本上：网络 pv $pv_seen > 本二进制上限 $pv_bin"
+      echo "        依据：$LOG_FILE 里有 \"maximum supported version by the binary\" 的 panic。"
+      echo "        这不是 Linux 的问题，也不是 MEV 补丁的问题：是基线版本落后于主网。"
+      echo "        处理：把补丁重打到更新的 mainnet-vX.Y.Z tag，步骤见"
+      echo "        docs/SUI_NODE_PATCH_IMPLEMENTATION.md 的『基线升级』一节。"
+      echo "        不要手改常量放宽 assert —— 那只会让执行层与链上规则错位。"
+      errors=$((errors + 1))
+    elif [[ -n "$pv_seen" ]]; then
+      ok "上次启动时网络 pv 为 $pv_seen ≤ 上限 $pv_bin（日志 $LOG_FILE）"
+    elif [[ -n "$PROTOCOL_RPC" ]] && command -v curl >/dev/null 2>&1; then
+      local pv_net=""
+      pv_net="$(curl -fsS -m "$PROTOCOL_RPC_TIMEOUT" -H 'Content-Type: application/json' \
+        -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"suix_getLatestSuiSystemState\",\"params\":[]}" \
+        "$PROTOCOL_RPC" 2>/dev/null | grep -oE '"protocolVersion":"[0-9]+"' | grep -oE '[0-9]+' | head -1 || true)"
+      if [[ -z "$pv_net" ]]; then
+        warn "PROTOCOL_RPC=$PROTOCOL_RPC 没返回 protocolVersion（端点不支持 JSON-RPC 或未同步）"
+      elif [[ "$pv_net" -gt "$pv_bin" ]]; then
+        bad "网络已在 protocol version $pv_net，本二进制最高只支持 $pv_bin —— 启动必然 panic"
+        echo "        处理：把补丁重打到更新的 mainnet-vX.Y.Z tag（见『基线升级』一节）。"
+        errors=$((errors + 1))
+      else
+        ok "网络 protocol version $pv_net ≤ 二进制上限 $pv_bin"
+      fi
+    else
+      ok "无 panic 记录，且未配 PROTOCOL_RPC（不联网）。先记住硬上限：$pv_bin"
+      echo "        主网一旦升到 $((pv_bin + 1))，本二进制会在启动时直接 abort；"
+      echo "        想提前比对：PROTOCOL_RPC=http://127.0.0.1:9000 ./$(basename "$0") check"
+    fi
+  fi
+
+  echo "==> 2/6 二进制"
   if [[ -x "$NODE_BIN" ]]; then
     ok "$NODE_BIN"
   else
@@ -212,7 +270,7 @@ do_check() {
     errors=$((errors + 1))
   fi
 
-  echo "==> 2/5 配置文件"
+  echo "==> 3/6 配置文件"
   if [[ -f "$CONFIG_PATH" ]]; then
     ok "$CONFIG_PATH"
     local genesis db_path
@@ -243,7 +301,7 @@ do_check() {
     db_path=""
   fi
 
-  echo "==> 3/5 YAML 结构与 MEV socket 字段（这一步最容易出错）"
+  echo "==> 4/6 YAML 结构与 MEV socket 字段（这一步最容易出错）"
 
   # 结构检查优先：有重复键的话节点根本起不来，后面字段对不对都没意义
   local dups
@@ -291,7 +349,7 @@ do_check() {
     fi
   done
 
-  echo "==> 4/5 id 清单"
+  echo "==> 5/6 id 清单"
   if [[ -f "$POOL_IDS_PATH" ]]; then
     local lines bytes commas
     lines="$(wc -l < "$POOL_IDS_PATH" | tr -d ' ')"
@@ -321,7 +379,7 @@ do_check() {
     echo "        但 bot 的 --preload-path 指向同一文件时，bot 侧会拿到空清单。"
   fi
 
-  echo "==> 5/5 socket 现状"
+  echo "==> 6/6 socket 现状"
   local s
   for s in "$SOCKET_CACHE" "$SOCKET_TX"; do
     if [[ -e "$s" ]]; then
