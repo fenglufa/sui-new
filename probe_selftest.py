@@ -66,10 +66,22 @@ def object_body(version):
     return bytes([0x01, 0x20]) + bytes([version]) * 30
 
 
-def cache_frame(ids):
+def object_body_padded(seed):
+    """An Object body the way mainnet actually writes it: 33 leading zero bytes.
+
+    ObjectData variant (00) + TypeTag variant (00) + a type address such as
+    0x2::coin::Coin (31 leading zeros) = 33 consecutive zeros before anything nonzero.
+    Every other body here is nonzero filler, which is exactly why a decoder that walks
+    elements on a fixed 32-byte stride could pass this selftest and still fall over on
+    live traffic: the window at the start of element #1's body is all zeros.
+    """
+    return b"\x00" * 33 + b"\x02" + bytes([seed]) * 24
+
+
+def cache_frame(ids, body=object_body):
     payload = uleb(len(ids))
     for i, oid in enumerate(ids):
-        payload += bytes.fromhex(oid) + object_body(i + 1)
+        payload += bytes.fromhex(oid) + body(i + 1)
     return struct.pack("<I", len(payload)) + payload   # cache length is LE
 
 
@@ -162,6 +174,14 @@ print("\n==> 语义：对象归属核对（节点只推清单内对象或 watche
 case("pool_id_in_list", 0, "cache", [cache_frame([POOL_ID])])
 case("foreign_needs_strict", 0, "cache", [cache_frame([FOREIGN_ID])])
 case("foreign_strict_exit4", 4, "cache", [cache_frame([FOREIGN_ID])], ["--strict-pool"])
+
+# The two cases that were missing. A multi-object frame with realistic zero-padded
+# bodies is ordinary mainnet traffic, and it is what the fixed-stride walk read back as
+# "all-zero ObjectID" on a perfectly healthy node.
+case("multi_real_bodies", 0, "cache",
+     [cache_frame([POOL_ID, POOL_ID], body=object_body_padded)])
+case("multi_real_bodies_strict", 0, "cache",
+     [cache_frame([POOL_ID, FOREIGN_ID], body=object_body_padded)], ["--strict-pool"])
 
 print("\n==> 负向：错格式必须被拒（这是探针有没有用的关键）")
 good = cache_frame([POOL_ID])

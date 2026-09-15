@@ -24,9 +24,10 @@ What counts as proof here, in order of strength:
    frames back to back and every frame is evidence about the previous one: get a byte
    order or a length wrong and the *next* prefix comes out absurd. So "N frames, no
    misalignment" proves framing, which is what breaks silently in production.
-2. Decoded *values*, not just framing. The cache stream's object ids must be members of
-   the node's own pool id list (--pool-ids); the tx stream's event JSON must carry a
-   base58 digest that decodes to 32 bytes. Both are checked without trusting RPC.
+2. Decoded *values*, not just framing. Each cache frame's *leading* object id must be a
+   member of the node's own pool id list (--pool-ids) -- only that one id is at a known
+   offset, see probe_cache_frame; the tx stream's event JSON must carry a base58 digest
+   that decodes to 32 bytes. Both are checked without trusting RPC.
 3. Cross-checking a decoded id/digest against an external reader. Only possible once the
    node has synced, so it is left to --explain at the end.
 
@@ -142,29 +143,31 @@ def check_tx_digest(value):
     return None
 
 
-def probe_cache_frame(payload, ids_seen, want_total):
-    """Structural decode of BCS Vec<(ObjectID, Object)>.
+def probe_cache_frame(payload, ids_seen):
+    """Structural decode of the first element of a BCS Vec<(ObjectID, Object)>.
 
-    ObjectID is 32 raw bytes under BCS. `Object` is variable-length and needs the real
-    Rust types to walk, so we read the leading ids (enough for membership checking) and
-    assert the payload is at least large enough to hold what the vector claims.
+    Only the leading id sits at a known offset. `Object` is variable-length, and getting
+    past one element means decoding the real Rust types -- that is the consumer's job
+    (the bot does bcs::from_bytes::<Vec<(ObjectID, Object)>> in
+    crates/simulator/src/db_simulator/mod.rs). Walking elements on a fixed 32-byte stride
+    lands inside element #1's body, which on mainnet starts with 33 zero bytes (two enum
+    variants plus a 0x2::... type address), so it hands back an all-zero or bogus id and
+    screams misalignment about a perfectly healthy stream. That is the only way this
+    decode can be wrong, so it is pinned by probe_selftest.py's multi_real_bodies cases.
+
+    The claimed count is still worth checking against the frame size: 32 bytes per
+    element is a floor, so an absurd count means a bad length prefix.
     """
     count, offset = decode_uleb128(payload, 0)
     if count == 0:
         raise FrameError("对象数为 0：notify_written 明确跳过空 vec，不该出现在线上")
-    # An object body is never shorter than a few bytes, so this is a cheap consistency
-    # test between the claimed count and the actual frame size.
     if len(payload) < offset + count * 32:
         raise FrameError(f"声称 {count} 个对象，但 payload 只有 {len(payload)} 字节")
 
-    hexed = []
-    cursor = offset
-    for _ in range(min(count, want_total)):
-        obj_id = payload[cursor:cursor + 32]
-        cursor += 32
-        if not any(obj_id):
-            raise FrameError("解出一个全零 ObjectID —— 偏移不对")
-        hexed.append("0x" + obj_id.hex())
+    obj_id = payload[offset:offset + 32]
+    if not any(obj_id):
+        raise FrameError("首个 ObjectID 全零 —— 偏移不对")
+    hexed = ["0x" + obj_id.hex()]
     ids_seen.update(hexed)
     return count, hexed
 
@@ -214,7 +217,7 @@ def run_cache(sock, args, pool_ids):
             raise FrameError(f"前缀说 {length} 字节，流却提前结束")
         frames += 1
         bytes_read += 4 + length
-        count, hexed = probe_cache_frame(payload, ids_seen, args.dump_ids)
+        count, hexed = probe_cache_frame(payload, ids_seen)
 
         if pool_ids is not None:
             for one in hexed:
@@ -223,13 +226,12 @@ def run_cache(sock, args, pool_ids):
 
         if not args.quiet:
             print(f"  cache #{frames:<5} 对象数={count:<4} 帧长={length:<7} "
-                  f"首个={hexed[0]}")
-            for extra in hexed[1:]:
-                print(f"          id={extra}")
+                  f"首 id={hexed[0]}")
 
     if pool_ids is not None and missing_from_pool:
         print(f"\n  注意：{len(missing_from_pool)} 个 id 不在 pool 清单里。")
         print("  这未必是 bug：SUI_MEV_WATCHED_OWNERS 命中地址的交易也会推。")
+        print("  （每帧只核对首 id：Object 体长可变，Python 侧跳过不了它去取后面的 id。）")
         for one in sorted(missing_from_pool)[:5]:
             print(f"    {one}")
     return frames, bytes_read, {
@@ -302,10 +304,9 @@ def main():
     ap.add_argument("--quiet", action="store_true", help="只打汇总")
     ap.add_argument("--json", action="store_true", help="汇总用 JSON 打")
     ap.add_argument("--pool-ids", default=DEFAULT_POOL_IDS,
-                    help=f"cache 流用它核对对象归属（默认 {DEFAULT_POOL_IDS}）")
+                    help=f"cache 流用它核对每帧首对象的归属（默认 {DEFAULT_POOL_IDS}）")
     ap.add_argument("--strict-pool", action="store_true",
                     help="有对象 id 不在 pool 清单里时退出码改为 4（默认只提示不报错）")
-    ap.add_argument("--dump-ids", type=int, default=4, help="每帧最多打几个对象 id（默认 4）")
     ap.add_argument("--show-first", action="store_true", help="打第一条 tx 流的完整事件 JSON")
     args = ap.parse_args()
 
