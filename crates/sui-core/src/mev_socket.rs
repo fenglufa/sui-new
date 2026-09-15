@@ -43,6 +43,13 @@ pub(crate) struct SocketFanOut<T> {
     frames: mpsc::Sender<T>,
     /// Live client count, checked by producers before queueing so an idle node does
     /// no serialization work.
+    ///
+    /// Owned by the writer task: only `run_writer` ever writes it. It used to have two
+    /// writers -- accept incremented it while the writer overwrote it with `store` --
+    /// and an increment could be lost against a delivery that dropped every client.
+    /// Producers gate on `has_subscribers`, so the erased subscriber was never handed
+    /// a frame again, and the writer never ran to correct the count either: a live
+    /// channel, permanently silent.
     connections: Arc<AtomicUsize>,
     dropped_frames: Arc<AtomicU64>,
     label: &'static str,
@@ -82,12 +89,13 @@ impl<T: Send + Sync + 'static> SocketFanOut<T> {
 
         info!(path = %socket_path.display(), "listening for subscribers");
 
-        let accept_connections = Arc::clone(&connections);
         tokio::spawn(async move {
             loop {
                 match listener.accept().await {
                     Ok((stream, _addr)) => {
-                        accept_connections.fetch_add(1, Ordering::Relaxed);
+                        // Deliberately not counted here: the writer publishes the count
+                        // once the socket is in its own client list, so there is exactly
+                        // one writer of `connections`. See `run_writer`.
                         info!("subscriber connected");
                         if incoming_tx.send(stream).await.is_err() {
                             // Writer task is gone, so nothing can serve this client.
@@ -180,6 +188,18 @@ fn bind_socket(path: &Path, label: &str) -> std::io::Result<UnixListener> {
 
 /// Single owner of every client connection, so writes are serialized without a lock
 /// and one payload is framed once no matter how many subscribers there are.
+///
+/// Also the only writer of `connections`, in both directions: clients are added when
+/// drained off `incoming` and removed after a delivery that found them dead. Counting
+/// at accept time instead handed the count a second writer, and the `store` below could
+/// then overwrite an increment with zero -- unrecoverably, because producers gate on
+/// that count and so stopped queueing the very frames that would re-run this task.
+///
+/// The cost of publishing from here instead is a short window in which an accepted
+/// client is not yet counted and can miss the frame being delivered at that moment.
+/// That one is recoverable: a simulator treats a missed push as a cache miss and reads
+/// the object from the store, whereas a permanently zero count recovered only when
+/// *another* client happened to connect.
 async fn run_writer<T: Send + Sync + 'static>(
     mut frames: mpsc::Receiver<T>,
     mut incoming: mpsc::Receiver<UnixStream>,
@@ -196,7 +216,10 @@ async fn run_writer<T: Send + Sync + 'static>(
 
             maybe_stream = incoming.recv() => {
                 match maybe_stream {
-                    Some(stream) => clients.push(stream),
+                    Some(stream) => {
+                        clients.push(stream);
+                        connections.store(clients.len(), Ordering::Relaxed);
+                    }
                     None => break,
                 }
             }
@@ -212,28 +235,26 @@ async fn run_writer<T: Send + Sync + 'static>(
                     dropped_frames.fetch_add(1, Ordering::Relaxed);
                     continue;
                 }
-                if deliver(&frame, &mut clients, &framer, label).await == 0 {
-                    connections.store(0, Ordering::Relaxed);
-                    continue;
-                }
+                deliver(&frame, &mut clients, &framer, label).await;
                 connections.store(clients.len(), Ordering::Relaxed);
             }
         }
     }
 }
 
-/// Write one frame to every client, dropping those that fail or stall. Returns how
-/// many clients are still live.
+/// Write one frame to every client, dropping those that fail or stall. Dead clients are
+/// removed from `clients` in place; the caller republishes the subscriber count from it,
+/// so this task stays the only writer of that count.
 async fn deliver<T>(
     frame: &T,
     clients: &mut Vec<UnixStream>,
     framer: &(impl Fn(&T) -> Option<Vec<u8>> + ?Sized),
     label: &str,
-) -> usize {
+) {
     let Some(frame_bytes) = framer(frame) else {
         // Not a per-client problem; skip the frame for everyone.
         error!(channel = label, "failed to frame payload, skipping frame");
-        return clients.len();
+        return;
     };
 
     let mut retained = Vec::with_capacity(clients.len());
@@ -256,7 +277,125 @@ async fn deliver<T>(
             }
         }
     }
-    let live = retained.len();
     *clients = retained;
-    live
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::io::AsyncReadExt;
+
+    fn scratch_socket(label: &str) -> PathBuf {
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "sui_mev_socket_test_{}_{}_{}.sock",
+            std::process::id(),
+            label,
+            n
+        ))
+    }
+
+    /// Larger than any platform's Unix socket buffer, so a client that never reads it
+    /// parks the writer inside `deliver` on a blocked `write_all`.
+    const STALL_PAYLOAD_BYTES: usize = 16 << 20;
+
+    /// Poll until at least `expected` subscribers are counted, for the cases where the
+    /// count only ever moves upwards.
+    async fn await_subscribers(fanout: &SocketFanOut<Vec<u8>>, expected: usize) {
+        for _ in 0..1000 {
+            if fanout.subscriber_count() >= expected {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        panic!("subscriber never registered on the fan-out");
+    }
+
+    /// The count once it stops moving, so a value that is merely in flight cannot pass
+    /// as the outcome.
+    ///
+    /// Needed because the buggy interleaving publishes a *correct-looking* count first:
+    /// accept increments it, and only later does the delivery overwrite it. Waiting for
+    /// quiet is also what keeps this honest on platforms where the big frame does not
+    /// park the writer at all, where the two tasks settle without ever colliding.
+    ///
+    /// The window must exceed `WRITE_TIMEOUT`: an eviction only publishes a new count
+    /// once the write deadline fires.
+    async fn settled_subscriber_count(fanout: &SocketFanOut<Vec<u8>>) -> usize {
+        const SETTLE_POLLS: u32 = 200; // 2s without a change
+        let mut last = fanout.subscriber_count();
+        let mut unchanged = 0;
+        for _ in 0..2000 {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+            let now = fanout.subscriber_count();
+            if now == last {
+                unchanged += 1;
+                if unchanged >= SETTLE_POLLS {
+                    return now;
+                }
+            } else {
+                unchanged = 0;
+                last = now;
+            }
+        }
+        last
+    }
+
+    /// A client that connects while a delivery is in flight must still be counted.
+    ///
+    /// Regression for the lost update: the accept task used to increment the count while
+    /// the writer task overwrote it with `store`, so an increment landing during a
+    /// delivery that dropped every client was erased. Producers skip work when
+    /// `has_subscribers()` is false, so the erased subscriber then never received a
+    /// frame -- and never would, because the zero count also stopped the writer from
+    /// running again. The symptom is a socket that is bound, connected, and permanently
+    /// silent, with no error on either side.
+    #[tokio::test]
+    async fn a_subscriber_that_connects_mid_delivery_is_still_counted() {
+        let path = scratch_socket("midconn");
+        let fanout = SocketFanOut::<Vec<u8>>::new(path.clone(), "test channel", |payload| {
+            Some(payload.clone())
+        });
+
+        let stalled = UnixStream::connect(&path)
+            .await
+            .expect("connect stalled subscriber");
+        await_subscribers(&fanout, 1).await;
+
+        // Park the writer: this frame can only be partially absorbed by the socket
+        // buffer of a subscriber that never reads.
+        fanout.push(vec![0u8; STALL_PAYLOAD_BYTES]);
+        tokio::time::sleep(Duration::from_millis(200)).await;
+
+        // The reconnect that used to be counted and then erased.
+        let mut late = UnixStream::connect(&path)
+            .await
+            .expect("connect late subscriber");
+        // Let the accept task observe it before failing the in-flight delivery.
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        drop(stalled);
+
+        // Judge the count only after it stops moving, and before queueing anything else:
+        // pushing another frame would hand the writer a delivery that republishes the
+        // count, hiding the very bug under test. The producers cannot do that, which is
+        // why the old zero was permanent.
+        assert_eq!(
+            settled_subscriber_count(&fanout).await,
+            1,
+            "the subscriber that arrived during a delivery must end up counted"
+        );
+
+        // And the channel must actually be live for it, not merely counted.
+        fanout.push(b"after".to_vec());
+        let mut buf = [0u8; 5];
+        tokio::time::timeout(Duration::from_secs(10), late.read_exact(&mut buf))
+            .await
+            .expect("late subscriber receives a later frame")
+            .expect("read frame");
+        assert_eq!(&buf, b"after");
+
+        drop(fanout);
+        let _ = std::fs::remove_file(&path);
+    }
 }
